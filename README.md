@@ -96,16 +96,89 @@ homelabracadabra/
 
 ---
 
-## 🚧 Status
+## ✅ Phase 1: Project Setup
 
-- [x] Create repository and README.me
-- [ ] R730xd hardware setup
-- [ ] Install Proxmox on SSD
-- [ ] Terraform VM provisioning plan
-- [ ] Migrate PostgreSQL to VM
-- [ ] Migrate Wiki.js
-- [ ] Migrate Paperless-ngx
-- [ ] etc...
+- [x] Create `homelabracadabra` Git repository
+- [x] Write root `README.md` (this file)
+
+---
+
+## 🛠 Phase 2: Infrastructure Setup
+
+### R730xd Server
+- [ ] Physically install and cable R730xd server
+- [ ] Install **Proxmox VE** on 2TB SSD
+- [ ] Configure ZFS storage on 4x 1.2TB SAS drives
+- [ ] Join server to `10.11.30.0/24` (Servers VLAN)
+- [ ] Set up SSH keys / admin access
+- [ ] Configure DNS and hostname
+
+### Pi 4 (Automation Controller)
+- [ ] Fresh Pi OS install
+- [ ] Install required tools: `git`, `ansible`, `terraform`, `docker`, etc.
+- [ ] Clone this repo
+- [ ] Create dedicated `README` for Pi setup
+- [ ] Set up secure SSH access to all nodes
+
+### Windows Plex Server
+- [ ] Document and configure SMB shares for media storage
+- [ ] Create `README` for Windows drive share setup
+- [ ] Ensure network shares are mountable by containers/VMs (credentials, paths, etc.)
+- [ ] Backup configuration planning
+
+---
+
+## ⚙️ Phase 3: Automation Stack
+
+### Terraform
+- [ ] Create `terraform/` folder
+- [ ] Define VM/LXC provisioning plans for services
+- [ ] Create module templates (memory, CPU, VLAN, disk)
+- [ ] Include metadata to map services to VMs/LXCs
+- [ ] Add README for provisioning system
+
+### Ansible
+- [ ] Create `ansible/` folder
+- [ ] Playbooks for base VM setup (users, updates, mounts)
+- [ ] Role-based structure for reusable service setup
+- [ ] Secrets & vault setup
+- [ ] Add README for structure and usage
+
+### Docker
+- [ ] Create `docker/` folder
+- [ ] Modular `docker-compose.yml` templates per service
+- [ ] Network configuration between services across containers/VMs
+- [ ] Sample `.env` and `config.yml` files for customization
+- [ ] Add README explaining service composition model
+
+---
+
+## 📦 Phase 4: Service Migration Plan
+
+Each service will be migrated from the Pi to the Proxmox server, one at a time. Some VMs may host multiple containers.
+
+| Service         | Status | Target VM/LXC        | Notes                                      |
+|------------------|--------|----------------------|--------------------------------------------|
+| PostgreSQL       | [ ]    | `db-core`            | Needed for multiple services               |
+| Wiki.js          | [ ]    | `wiki-app`           | DB hosted on `db-core`                     |
+| Paperless-ngx    | [ ]    | `paperless`          | Connect to shared media volume             |
+| SWAG             | [ ]    | `reverse-proxy`      | Public reverse proxy, DNS handling         |
+| Home Assistant   | [ ]    | `iot-core`           | VLAN 40, requires device passthrough       |
+| Prometheus       | [ ]    | `metrics`            | Monitors all VMs and services              |
+| Grafana          | [ ]    | `metrics`            | Dashboards and alerting                    |
+| FlareSolverr     | [ ]    | `search-utils`       | Used by Jackett, Radarr, Sonarr            |
+| Jackett          | [ ]    | `search-utils`       | Indexers                                   |
+| OpenWebUI        | [ ]    | `llm-ui`             | Connects to Ollama on Windows Plex server  |
+
+---
+
+## 🧪 Bonus Plans
+
+- [ ] Use Ansible to configure Windows shares via Samba mounts in containers
+- [ ] Configure templated VM assignments via `terraform.tfvars`
+- [ ] Add backup and restore scripts using restic or rsync
+- [ ] Enable Proxmox API access for automated provisioning
+- [ ] Optional: Monitor and update DNS records via Cloudflare API
 
 ---
 
