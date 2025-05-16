@@ -1,0 +1,26 @@
+all:
+  children:
+    postgres_vm:
+      hosts:
+        postgres_vm:
+          ansible_host: 10.11.30.50
+          ansible_user: admin
+      children:
+        audiobookshelf:
+          hosts:
+            audiobookshelf:
+              data_dir: /opt/data/paperless/data
+              media_dir: /opt/data/paperless/media
+              port: 13377
+        paperless:
+          hosts:
+            paperless:
+              data_dir: /opt/data/paperless/data
+              media_dir: /opt/data/paperless/media
+              port: 8000
+    wikijs_vm:
+      hosts:
+        wikijs_vm:
+          ansible_host: 10.11.30.51
+          ansible_user: admin
+      children: {}

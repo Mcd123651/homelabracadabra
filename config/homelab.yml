@@ -8,6 +8,7 @@ vms:
     ssh_user: "admin"
     memory: "2G"
     disk_size: "20G"
+    base_data_dir: "/opt/data"
 
   wikijs:
     name: "wikijs_vm"
@@ -15,15 +16,24 @@ vms:
     ssh_user: "admin"
     memory: "2G"
     disk_size: "10G"
+    base_data_dir: "/opt/data"
 
 # ======================
 # Docker Configuration
 # ======================
+
 docker:
+  audiobookshelf:
+    vm: 'postgres_vm'
+    data_dir: "paperless/data"
+    media_dir: "paperless/media"
+    port: 13377
+
   paperless:
-    port: 8080
-    data_dir: "/opt/paperless/data"
-    media_dir: "/opt/paperless/media"
+    vm: 'postgres_vm'
+    data_dir: "paperless/data"
+    media_dir: "paperless/media"
+    port: 8000
 
 # ======================
 # Network Configuration

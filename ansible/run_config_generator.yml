@@ -1,0 +1,29 @@
+---
+- name: Create venv and run config generator
+  hosts: localhost
+  gather_facts: no
+  vars:
+    venv_path: "{{ playbook_dir }}/../.venv"
+    script_dir: "{{ playbook_dir }}/../config"
+    requirements_file: "{{ script_dir }}/requirements.txt"
+    generator_script: "{{ script_dir }}/generate_configs.py"
+
+  tasks:
+
+    - name: Ensure Python 3 venv module is available
+      apt:
+        name: python3-venv
+        state: present
+      become: yes
+
+    - name: Create virtual environment if it doesn't exist
+      command: python3 -m venv {{ venv_path }}
+      args:
+        creates: "{{ venv_path }}/bin/activate"
+
+    - name: Install Python requirements in venv
+      command: "{{ venv_path }}/bin/pip install -r {{ requirements_file }}"
+
+    - name: Run generate_configs.py inside venv
+      command: "{{ venv_path }}/bin/python {{ generator_script }}"
+

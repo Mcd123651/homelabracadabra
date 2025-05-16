@@ -1,6 +1,12 @@
-- name: Test homelab config
+- name: Load and use homelab config
   hosts: localhost
+  vars:
+    homelab_config: "{{ lookup('file', '../config/homelab.yml') | from_yaml }}"
   tasks:
+    - name: Show full config
+      debug:
+        var: homelab_config
+
     - name: Show IP of postgres
       debug:
-        msg: "{{ homelab_config.vms.postgres.ip }}"
+        msg: "{{ homelab_config.docker.audiobookshelf.port }}"
