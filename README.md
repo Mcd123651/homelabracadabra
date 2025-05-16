@@ -12,6 +12,9 @@ Let’s automate some magic.
 
 ---
 
+## Quick Links
+- [🍓Pi4 Setup Guide](docs/PI4-README.md)
+
 ## 🏠 Homelab Overview
 
 ### 🧠 Controller: Raspberry Pi 4
@@ -79,17 +82,12 @@ I’m migrating all services off the Pi4 and onto the R730xd **one service at a 
 ## 🗂️ Repo Structure (WIP)
 ```bash
 homelabracadabra/
-    ├── terraform/ # Define VMs, networking, storage
-    │ └── README.md
-    ├── ansible/ # Provision and configure systems
-    │ └── README.md
-    ├── docker/ # Compose files for services
-    │ └── wikijs/
-    │ └── paperless/
-    │ └── ...
-    ├── templates/ # Shared Terraform or Ansible roles
-    ├── inventory/ # Static or dynamic Ansible inventory
-    ├── docs/ # Diagrams, architecture notes, etc.
+    ├── terraform/ # VM/LXC provisioning (Proxmox provider)
+    ├── ansible/ # Playbooks and roles for configuration
+    ├── docker/ # Compose files per service or group
+    ├── scripts/ # Utility scripts (backup, snapshot, health)
+    ├── configs/ # Sample config files, env templates
+    ├── docs/ # Service-specific READMEs and guides
     └── README.md # This file
 ```
 
@@ -188,8 +186,8 @@ This project is licensed under the [MIT License](./LICENSE).
 
 ---
 
-## 🙌 Inspiration
+## 💬 Contribution & Customization
 
-Inspired by the chaos and joy of self-hosting, and the satisfaction of typing `ansible-playbook deploy.yml` and watching services spin into life.
+This project is designed to be **hardware-agnostic** and **easily configurable**. Use the sample config files to define your own infrastructure layout, VLANs, services, and Proxmox templates. Fork it, adapt it, and make some magic.
 
 ---
