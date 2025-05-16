@@ -1,0 +1,33 @@
+# ======================
+# VM Configuration
+# ======================
+vms:
+  postgres:
+    name: "postgres_vm"
+    ip: "10.11.30.50"
+    ssh_user: "admin"
+    memory: "2G"
+    disk_size: "20G"
+
+  wikijs:
+    name: "wikijs_vm"
+    ip: "10.11.30.51"
+    ssh_user: "admin"
+    memory: "2G"
+    disk_size: "10G"
+
+# ======================
+# Docker Configuration
+# ======================
+docker:
+  paperless:
+    port: 8080
+    data_dir: "/opt/paperless/data"
+    media_dir: "/opt/paperless/media"
+
+# ======================
+# Network Configuration
+# ======================
+network:
+  main_vlan: "10.11.10.0/24"
+  server_vlan: "10.11.30.0/24"
