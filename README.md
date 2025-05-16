@@ -98,6 +98,7 @@ homelabracadabra/
 
 - [x] Create `homelabracadabra` Git repository
 - [x] Write root `README.md` (this file)
+- [x] Write `PI4-README.md` fresh install guide
 
 ---
 
