@@ -2,7 +2,13 @@
 
 > *Because it's magic when it works.*
 
-This repo is a magical collection of Infrastructure as Code (IaC) for conjuring up my self-hosted services, VMs, containers, and automations. Built with Proxmox, Ansible, Terraform, and Docker—because when it all works together, it feels like sorcery.
+**homelabracadabra** is a magical collection of Infrastructure as Code (IaC) for conjuring up self-hosted services, virtual machines, containers, and automations.
+
+Built with **Proxmox**, **Ansible**, **Terraform**, and **Docker**, this repo powers my homelab—but it’s designed to be **adaptable for others** too. Hardware-agnostic configurations, templated provisioning, and modular service definitions mean *you* can fork this project and shape it to your own wizardry.
+
+Whether you’re running on a Raspberry Pi, a rackmount server, or just dreaming of your future setup, these scripts can be customized to suit your network, VM layout, and service stack.
+
+Let’s automate some magic.
 
 ---
 
