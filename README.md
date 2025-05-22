@@ -112,3 +112,25 @@ Now execute:
 ```bash
 ansible-playbook ansible/run_config_generator.yml
 ```
+This script will convert your variables into ```terraform_output/``` directory. You can delete ```terraform_output_example/``` as these files were generated simple for examples.
+
+```bash
+cd terraform_output/
+```
+Rename ```terraform.tfvars.example``` to ```terraform.tfvars``` and edit the contents. Make sure you also edit ```variables.tf``` if desired (Example "root@pam" is used to ssh into proxmox by default)
+
+Install terraform if you have not already
+
+```bash
+sudo apt install -y gnupg software-properties-common
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install terraform
+```
+and run these commands:
+```bash
+terraform init
+# and
+terraform apply
+```
+If all of the variables are set up properly, then you should now have a template and VMs spawned in proxmox and the ability to SSH into them.
