@@ -6,62 +6,33 @@ proxmox:
   target_node: "homelab"
 
 template:
-  name: "ubuntu-2404-cloudinit-template"
-  image: "noble-server-cloudimg-amd64.img"
-  vmid: 9000
-  memory: 1024
-  user: "homelab"
-  tags: ["cloudinit", "ubuntu-template", "2404"]
-
-ansible: false
-docker: false
+  ubuntu:
+    name: "ubuntu-2404-cloudinit-template"
+    image: "noble-server-cloudimg-amd64.img"
+    vmid: 9000
+    datasource_id: "dockervms"
+    disk: 20
+    memory: 1024
+    user: "homelab"
+    ssh_key: "/home/pi/.ssh/id_rsa_homelab.pub"
+    tags: ["template", "ubuntu"]
 
 # ======================
 # VM Configuration
 # ======================
-vms:
+hosts:
   - name: vm-networking
-    vmid: 1001
     cores: 2
-    memory: 4096        # 4 GB
+    memory: 4096   
     disk: 32
     ip: 10.11.30.6/24
     gateway: 10.11.30.1
-    ssh_user: homelab
-    ssh_pub_key_path: ~/.ssh/id_rsa_homelab.pub
     template: 9000
 
   - name: vm-databases
-    vmid: 1002
     cores: 4
-    memory: 8192        # 8 GB
+    memory: 8192 
     disk: 64
     ip: 10.11.30.7/24
     gateway: 10.11.30.1
-    ssh_user: homelab
-    ssh_pub_key_path: ~/.ssh/id_rsa_homelab.pub
     template: 9000
-
-# ======================
-# Docker Configuration
-# ======================
-
-docker:
-  audiobookshelf:
-    vm: 'vm-databases'
-    data_dir: "paperless/data"
-    media_dir: "paperless/media"
-    port: 13377
-
-  paperless:
-    vm: 'postgres_vm'
-    data_dir: "paperless/data"
-    media_dir: "paperless/media"
-    port: 8000
-
-# ======================
-# Network Configuration
-# ======================
-network:
-  main_vlan: "10.11.10.0/24"
-  server_vlan: "10.11.30.0/24"

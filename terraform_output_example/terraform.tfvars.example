@@ -1,0 +1,5 @@
+# Proxmox Vars
+pm_password = "CHANGEME"
+
+# User SSH PW
+default_password = "CHANGEME"

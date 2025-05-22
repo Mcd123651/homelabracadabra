@@ -1,2 +1,7 @@
 .venv/
-terraform/terraform.tfvars
+*terraform.tfvars
+.terraform
+.terraform*
+*terraform.tfstate*
+config/homelab.yml
+terraform_output/
