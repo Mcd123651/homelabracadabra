@@ -5,3 +5,6 @@
 *terraform.tfstate*
 config/homelab.yml
 terraform_output/
+
+config/generate_configs.py
+config/generate_provision_script.py
