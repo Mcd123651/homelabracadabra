@@ -1,22 +1,46 @@
 # ======================
+# Global Configuration
+# ======================
+proxmox:
+  host: "10.11.30.4"
+  target_node: "homelab"
+
+template:
+  name: "ubuntu-2404-cloudinit-template"
+  image: "noble-server-cloudimg-amd64.img"
+  vmid: 9000
+  memory: 1024
+  user: "homelab"
+  tags: ["cloudinit", "ubuntu-template", "2404"]
+
+ansible: false
+docker: false
+
+# ======================
 # VM Configuration
 # ======================
 vms:
-  postgres:
-    name: "postgres_vm"
-    ip: "10.11.30.50"
-    ssh_user: "admin"
-    memory: "2G"
-    disk_size: "20G"
-    base_data_dir: "/opt/data"
+  - name: vm-networking
+    vmid: 1001
+    cores: 2
+    memory: 4096        # 4 GB
+    disk: 32
+    ip: 10.11.30.6/24
+    gateway: 10.11.30.1
+    ssh_user: homelab
+    ssh_pub_key_path: ~/.ssh/id_rsa_homelab.pub
+    template: 9000
 
-  wikijs:
-    name: "wikijs_vm"
-    ip: "10.11.30.51"
-    ssh_user: "admin"
-    memory: "2G"
-    disk_size: "10G"
-    base_data_dir: "/opt/data"
+  - name: vm-databases
+    vmid: 1002
+    cores: 4
+    memory: 8192        # 8 GB
+    disk: 64
+    ip: 10.11.30.7/24
+    gateway: 10.11.30.1
+    ssh_user: homelab
+    ssh_pub_key_path: ~/.ssh/id_rsa_homelab.pub
+    template: 9000
 
 # ======================
 # Docker Configuration
@@ -24,7 +48,7 @@ vms:
 
 docker:
   audiobookshelf:
-    vm: 'postgres_vm'
+    vm: 'vm-databases'
     data_dir: "paperless/data"
     media_dir: "paperless/media"
     port: 13377

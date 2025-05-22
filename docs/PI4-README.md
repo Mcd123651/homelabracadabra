@@ -69,6 +69,10 @@ curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/s
 echo "deb [signed-by=/usr/share/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt update && sudo apt install terraform
 ```
+Test teraform install
+```bash
+teraform -v
+```
 
 # 🛠️ Clone the Homelab Repo
 
@@ -82,11 +86,11 @@ cd homelabracadabra
 
 Set up SSH key (if not already):
 ```bash
-ssh-keygen -t ed25519 -C "pi@homelab"
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa_homelab -C "homelab_auto"
 ```
-Copy the key to your nodes (e.g. Proxmox server, VMs, etc.):
+Now the filepath can be used in the core `config/homelab.yml`:
 ```bash
-ssh-copy-id user@hostname
+ssh_pub_key_path: ~/.ssh/id_rsa_homelab.pub
 ```
 Test that you can connect to all relevant machines without a password.
 
