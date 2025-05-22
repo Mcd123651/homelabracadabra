@@ -10,185 +10,105 @@ Whether you’re running on a Raspberry Pi, a rackmount server, or just dreaming
 
 Let’s automate some magic.
 
----
 
 ## Quick Links
+- [🏠Homelab Overview](docs/HOMELAB_OVERVIEW.md)
 - [🍓Pi4 Setup Guide](docs/PI4-README.md)
 
-## 🏠 Homelab Overview
 
-### 🧠 Controller: Raspberry Pi 4
-- Runs Git (this repo)
-- Executes Terraform and Ansible for provisioning and orchestration
-- Minimal control plane that stays online even during server reboots
-- Orchestration
+## Prerequisites
 
-### 🎞️ Media Server: Windows PC
-- Hosts Plex, Sonarr, Radarr, and Unpackerr
-- 48TB storage pool for media
-- 16GB VRAM (used for Ollama / local AI inference)
-- Will continue to run Plex stack indefinitely
+1. Have [proxmox](https://www.proxmox.com/en/) installed and your storage drives set up
+2. Set up an orchestration node (In this guide I am using a PI4) 
+3. Using the Pi4 guide make sure ansible and terraform are installed.
 
-### 🏋️‍♂️ New Hypervisor: Dell R730xd
-- 2× Intel Xeon E5-2690 v4 (28 cores total)
-- 128GB DDR4 RAM
-- 4× 1.2TB SAS drives (to be configured with ZFS)
-- 2TB Samsung 870 EVO SSD (Proxmox boot drive)
-- 2× 10Gb SFP+ and 2× 1Gb NICs
-- Will replace Pi4 for all service hosting via Proxmox VMs and containers
-- Will replace Sonarr, Radarr, and Unpackarr from Windows Plex server
+## Step 1. Building Infrastructure (VMs)
 
----
-
-## 🌐 Network Architecture
-
-Managed via **Ubiquiti Dream Machine Pro** + **USW 16 POE** with VLANs:
-
-| VLAN        | Subnet         | Purpose                        |
-|-------------|----------------|--------------------------------|
-| 10.11.1.0   | Ubiquiti       | Network devices                |
-| 10.11.10.0  | Main (Admin)   | Primary access                 |
-| 10.11.20.0  | Kids Internet  | Restricted VLAN                |
-| 10.11.30.0  | Servers        | R730xd, Plex PC, Pi4           |
-| 10.11.40.0  | IoT            | Smart home devices/ Cameras    |
-| 10.11.90.0  | Guest          | Guest WiFi                     |
-
----
-
-## 🛠️ Planned Stack
-
-| Layer         | Tool              | Purpose                               |
-|---------------|-------------------|---------------------------------------|
-| Hypervisor    | Proxmox VE        | Host VMs and LXCs                     |
-| Provisioning  | Terraform         | Define VM/LXC specs and network setup |
-| Configuration | Ansible           | Install Docker, configure services    |
-| Containers    | Docker Compose    | Run self-hosted apps in containers    |
-| Backup        | TBD               | Backup services, configs, and data    |
-
----
-
-## 🧩 Migration Plan
-
-I’m migrating all services off the Pi4 and onto the R730xd **one service at a time**. Each service will be assigned to a dedicated VM or LXC, depending on isolation and resource needs.
-
-### Goals:
-- Full reproducibility via Infrastructure-as-Code (IaC)
-- Clean separation between compute, config, and storage
-- Use Docker Compose to deploy apps inside VMs or LXCs
-- Automate as much as possible from the Pi4
-
----
-
-## 🗂️ Repo Structure (WIP)
+First you will need to clone this repo into your control node (Pi4 etc..)
 ```bash
-homelabracadabra/
-    ├── terraform/ # VM/LXC provisioning (Proxmox provider)
-    ├── ansible/ # Playbooks and roles for configuration
-    ├── docker/ # Compose files per service or group
-    ├── scripts/ # Utility scripts (backup, snapshot, health)
-    ├── configs/ # Sample config files, env templates
-    ├── docs/ # Service-specific READMEs and guides
-    └── README.md # This file
+git clone https://github.com/Mcd123651/homelabracadabra.git
+
+cd homelabracadabra
 ```
 
+Navigate to ```config/``` and rename ```homelab.yml.example``` to ```homelab.yml```
 
----
+This file will serve as the master config for the enture homelab. For Phase 1 we are only going to manage the Global and VM sections:
 
-## ✅ Phase 1: Project Setup
+Create a new SSH key to be used to ssh into the new vms:
+```bash
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa_lab -C "lab_ssh"
+```
 
-- [x] Create `homelabracadabra` Git repository
-- [x] Write root `README.md` (this file)
-- [x] Write `PI4-README.md` fresh install guide
+Edit the variables
 
----
+```yml
+# ======================
+# Global Configuration
+# ======================
+proxmox:
+  host: "192.168.100.10"               # Replace with your Proxmox host IP
+  target_node: "lab-node"              # Replace with your actual node name ex. PVE
 
-## 🛠 Phase 2: Infrastructure Setup
+template:                              # Create Proxmox Templates to clone into VMs
+  ubuntu:
+    name: "ubuntu-cloudinit-template"  # Name of Template 
+    image: "ubuntu-cloudimg-amd64.img" # Image of ubuntu template 
+    vmid: 9000                         # Image of ubuntu template 
+    datasource_id: "default-datastore" # Disc where you want the template to be saved 
+    disk: 20                           # Template size 
+    memory: 1024                       # Template memory 
+    user: "labadmin"                   # SSH Username 
+    ssh_key: "/home/user/.ssh/id_rsa_lab.pub"  # Control node public key
+    tags: ["template", "ubuntu"]       # Proxmox tags
 
-### R730xd Server
-- [ ] Physically install and cable R730xd server
-- [ ] Install **Proxmox VE** on 2TB SSD
-- [ ] Configure ZFS storage on 4x 1.2TB SAS drives
-- [ ] Join server to `10.11.30.0/24` (Servers VLAN)
-- [ ] Set up SSH keys / admin access
-- [ ] Configure DNS and hostname
+# ======================
+# VM Configuration
+# ======================
+hosts:
+  - name: vm-router           # Name of VM
+    cores: 2                  # Number of cores
+    memory: 4096              # RAM
+    disk: 32                  # Storage size
+    ip: 192.168.100.101/24    # Set ip address
+    gateway: 192.168.100.1    # Set gateway
+    template: 9000            # Template ID to clone
 
-### Pi 4 (Automation Controller)
-- [ ] Fresh Pi OS install
-- [ ] Install required tools: `git`, `ansible`, `terraform`, `docker`, etc.
-- [ ] Clone this repo
-- [ ] Create dedicated `README` for Pi setup
-- [ ] Set up secure SSH access to all nodes
+  - name: vm-database
+    cores: 4
+    memory: 8192
+    disk: 64
+    ip: 192.168.100.102/24
+    gateway: 192.168.100.1
+    template: 9000
+```
+TODO: Add implementation for dhcp
+```bash
+  initialization {
+    ip_config {
+      ipv4 {
+        address = "dhcp"
+      }
+    }
+```
 
-### Windows Plex Server
-- [ ] Document and configure SMB shares for media storage
-- [ ] Create `README` for Windows drive share setup
-- [ ] Ensure network shares are mountable by containers/VMs (credentials, paths, etc.)
-- [ ] Backup configuration planning
+### Next we will generate our terraform directory by executing an ansible script.
 
----
+First create and activate a .venv enviornment at the root of the repository
+```python
+# Create
+python3 -m venv .venv
+# Activate
+source .venv/bin/activate
+```
+Install Ansible
+```python
+sudo apt install -y software-properties-common
+sudo apt-add-repository --yes --update ppa:ansible/ansible
+sudo apt install -y ansible
+```
 
-## ⚙️ Phase 3: Automation Stack
-
-### Terraform
-- [ ] Create `terraform/` folder
-- [ ] Define VM/LXC provisioning plans for services
-- [ ] Create module templates (memory, CPU, VLAN, disk)
-- [ ] Include metadata to map services to VMs/LXCs
-- [ ] Add README for provisioning system
-
-### Ansible
-- [ ] Create `ansible/` folder
-- [ ] Playbooks for base VM setup (users, updates, mounts)
-- [ ] Role-based structure for reusable service setup
-- [ ] Secrets & vault setup
-- [ ] Add README for structure and usage
-
-### Docker
-- [ ] Create `docker/` folder
-- [ ] Modular `docker-compose.yml` templates per service
-- [ ] Network configuration between services across containers/VMs
-- [ ] Sample `.env` and `config.yml` files for customization
-- [ ] Add README explaining service composition model
-
----
-
-## 📦 Phase 4: Service Migration Plan
-
-Each service will be migrated from the Pi to the Proxmox server, one at a time. Some VMs may host multiple containers.
-
-| Service         | Status | Target VM/LXC        | Notes                                      |
-|------------------|--------|----------------------|--------------------------------------------|
-| PostgreSQL       | [ ]    | `db-core`            | Needed for multiple services               |
-| Wiki.js          | [ ]    | `wiki-app`           | DB hosted on `db-core`                     |
-| Paperless-ngx    | [ ]    | `paperless`          | Connect to shared media volume             |
-| SWAG             | [ ]    | `reverse-proxy`      | Public reverse proxy, DNS handling         |
-| Home Assistant   | [ ]    | `iot-core`           | VLAN 40, requires device passthrough       |
-| Prometheus       | [ ]    | `metrics`            | Monitors all VMs and services              |
-| Grafana          | [ ]    | `metrics`            | Dashboards and alerting                    |
-| FlareSolverr     | [ ]    | `search-utils`       | Used by Jackett, Radarr, Sonarr            |
-| Jackett          | [ ]    | `search-utils`       | Indexers                                   |
-| OpenWebUI        | [ ]    | `llm-ui`             | Connects to Ollama on Windows Plex server  |
-
----
-
-## 🧪 Bonus Plans
-
-- [ ] Use Ansible to configure Windows shares via Samba mounts in containers
-- [ ] Configure templated VM assignments via `terraform.tfvars`
-- [ ] Add backup and restore scripts using restic or rsync
-- [ ] Enable Proxmox API access for automated provisioning
-- [ ] Optional: Monitor and update DNS records via Cloudflare API
-
----
-
-## 📜 License
-
-This project is licensed under the [MIT License](./LICENSE).
-
----
-
-## 💬 Contribution & Customization
-
-This project is designed to be **hardware-agnostic** and **easily configurable**. Use the sample config files to define your own infrastructure layout, VLANs, services, and Proxmox templates. Fork it, adapt it, and make some magic.
-
----
+Now execute:
+```bash
+ansible-playbook ansible/run_config_generator.yml
+```

@@ -6,7 +6,7 @@
     venv_path: "{{ playbook_dir }}/../.venv"
     script_dir: "{{ playbook_dir }}/../config"
     requirements_file: "{{ script_dir }}/requirements.txt"
-    generator_script: "{{ script_dir }}/generate_configs.py"
+    generator_script: "{{ script_dir }}/generate_terraform.py"
 
   tasks:
 
@@ -24,6 +24,6 @@
     - name: Install Python requirements in venv
       command: "{{ venv_path }}/bin/pip install -r {{ requirements_file }}"
 
-    - name: Run generate_configs.py inside venv
+    - name: Run generate_terraform.py inside venv to generate terraform files
       command: "{{ venv_path }}/bin/python {{ generator_script }}"
 
