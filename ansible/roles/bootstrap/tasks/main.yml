@@ -1,0 +1,6 @@
+---
+- name: ufw
+  import_tasks: ufw.yml
+
+- name: ssh
+  import_tasks: ssh.yml

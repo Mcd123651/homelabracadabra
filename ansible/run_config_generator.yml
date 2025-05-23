@@ -6,7 +6,7 @@
     venv_path: "{{ playbook_dir }}/../.venv"
     script_dir: "{{ playbook_dir }}/../config"
     requirements_file: "{{ script_dir }}/requirements.txt"
-    generator_script: "{{ script_dir }}/generate_terraform.py"
+    generator_script: "{{ script_dir }}/generate_provisioning_files.py"
 
   tasks:
 

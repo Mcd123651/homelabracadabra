@@ -1,6 +1,10 @@
 # ======================
 # Global Configuration
 # ======================
+global:
+  vm_ssh_port: 2222
+  subnets: ["192.168.100.0/24"]
+
 proxmox:
   host: "192.168.100.10"        # Replace with your Proxmox host IP
   target_node: "lab-node"       # Replace with your actual node name

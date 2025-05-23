@@ -1,0 +1,29 @@
+- name: Set SSH port to {{ ssh_port }}
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port '
+    line: "Port {{ ssh_port }}"
+  notify: Restart ssh
+
+- name: Disable password authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication '
+    line: 'PasswordAuthentication no'
+  notify: Restart ssh
+
+- name: Disable root login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin '
+    line: 'PermitRootLogin no'
+  notify: Restart ssh
+
+- name: Stop and disable ssh.socket if it exists
+  systemd:
+    name: ssh.socket
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+  notify: Restart ssh
+

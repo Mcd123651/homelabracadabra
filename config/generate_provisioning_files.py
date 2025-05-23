@@ -9,7 +9,13 @@ def load_config(filename="homelab.yml"):
         return yaml.safe_load(f)
 
 
-def ensure_output_dir(relative_path="../terraform_output"):
+def ensure_terraform_dir(relative_path="../terraform_output"):
+    script_dir = Path(__file__).resolve().parent
+    output_path = (script_dir / relative_path).resolve()
+    output_path.mkdir(parents=True, exist_ok=True)
+    return output_path
+
+def ensure_ansible_dir(relative_path="../ansible"):
     script_dir = Path(__file__).resolve().parent
     output_path = (script_dir / relative_path).resolve()
     output_path.mkdir(parents=True, exist_ok=True)
@@ -219,20 +225,41 @@ pm_password = "CHANGEME"
 default_password = "CHANGEME"
 """.strip()
 
+def generate_ansible_inventory(config):
+    hosts = config["hosts"]
+    inventory_lines = ["[homelab]"]
+    for host in hosts:
+        inventory_lines.append(host["ip"].split("/")[0])
+
+    inventory_lines += [
+        "\n[homelab:vars]",
+        f"ansible_user={config['template']['ubuntu']['user']}",
+        f"ansible_ssh_private_key_file={config['template']['ubuntu']['ssh_key'].replace('.pub', '')}",
+        f"ansible_port={config['global']['vm_ssh_port']}",
+        f"ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'"
+    ]
+    inventory_lines.append(f"subnets={' '.join(config['global']['subnets'])}")
+    
+    return "\n".join(inventory_lines)
+
+
 def write_file(path, content):
     path.write_text(content)
     print(f"Written: {path}")
 
-
 def main():
     config = load_config()
-    output_dir = ensure_output_dir()
+    output_dir = ensure_terraform_dir()
+    ansible_dir = ensure_ansible_dir()
 
     write_file(output_dir / "template.tf", generate_template_tf(config))
     write_file(output_dir / "main.tf", generate_main_tf(config))
     write_file(output_dir / "provider.tf", generate_provider_tf())
     write_file(output_dir / "variables.tf", generate_variables_tf(config))
     write_file(output_dir / "terraform.tfvars.example", generate_tfvars())
+
+    # New: Write Ansible inventory
+    write_file(ansible_dir / "inventory.ini", generate_ansible_inventory(config))
 
     print(f"\nAll Terraform files written to: {output_dir.resolve()}")
 

@@ -1,0 +1,63 @@
+- name: Install UFW if not already installed
+  apt:
+    name: ufw
+    state: present
+
+- name: Set UFW default deny policies (incoming)
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Set UFW default deny policies (outgoing)
+  community.general.ufw:
+    direction: outgoing
+    policy: deny
+
+- name: Allow incoming SSH on port from anywhere (fallback)
+  community.general.ufw:
+    rule: allow
+    port: '{{ ssh_port }}'
+    proto: tcp
+  when: subnets | length == 0
+ 
+- name: Allow incoming SSH on port from each allowed subnet
+  community.general.ufw:
+    rule: allow
+    port: '{{ ssh_port }}'
+    proto: tcp
+    from_ip: '{{ item }}'
+  loop: "{{ subnets.split() }}"
+  when: subnets | length > 0
+
+- name: Allow outgoing SSH replies to each allowed subnet
+  community.general.ufw:
+    rule: allow
+    direction: out
+    to_ip: '{{ item }}'
+  loop: "{{ subnets.split() }}"
+  when: subnets | length > 0
+
+- name: Allow outbound DNS (UDP 53)
+  community.general.ufw:
+    rule: allow
+    direction: out
+    port: '53'
+    proto: udp
+
+- name: Allow outbound HTTP
+  community.general.ufw:
+    rule: allow
+    direction: out
+    port: '80'
+    proto: tcp
+
+- name: Allow outbound HTTPS
+  community.general.ufw:
+    rule: allow
+    direction: out
+    port: '443'
+    proto: tcp    
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
