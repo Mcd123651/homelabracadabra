@@ -51,7 +51,7 @@ def copy_templates_and_validate(service, vm_name):
     all_vars_found = True
 
     for file in template_source_path.iterdir():
-        if file.suffix in [".j2", ""]:
+        if file.name.endswith(".j2"):
             required_vars = extract_jinja_variables(file)
 
             # Prepare context for variable checking
@@ -73,40 +73,45 @@ def copy_templates_and_validate(service, vm_name):
                 continue
 
             # Copy file to templates or tasks/main.yml
-            if "compose" in file.name or ".env" in file.name:
-                dest = role_templates_path / file.name
-            else:
+            if "main" in file.name:
                 dest = role_tasks_path / "main.yml"
+            else:
+                dest = role_templates_path / file.name
             shutil.copyfile(file, dest)
 
     return all_vars_found
 
-def generate_playbook(name, vm_name, service, base_dir=BASE_DIR):
+def generate_playbook_for_host(vm_name, services_for_host, base_dir=BASE_DIR):
     playbooks_dir = base_dir.parent / "ansible"
     playbooks_dir.mkdir(parents=True, exist_ok=True)
 
-    # Dump entire service dict YAML with 4 spaces indent
-    service_yaml = yaml.dump(service, default_flow_style=False, indent=4)
-    # Indent 6 spaces to nest under vars: service:
-    service_yaml_indented = textwrap.indent(service_yaml, ' ' * 6)
+    playbook_blocks = []
 
-    playbook_content = (
-        f"- name: Run {name} role on {vm_name}\n"
-        f"  hosts: {vm_name}\n"
-        f"  become: false\n"
-        f"  gather_facts: true\n"
-        f"  vars:\n"
-        f"    service:\n"
-        f"{service_yaml_indented}"
-        f"  roles:\n"
-        f"    - {name}\n"
-    )
+    for service in services_for_host:
+        name = service["name"]
+        service_yaml = yaml.dump(service, default_flow_style=False, indent=4)
+        service_yaml_indented = textwrap.indent(service_yaml, ' ' * 6)
 
-    playbook_path = playbooks_dir / f"{name}_service.yml"
+        block = (
+            f"- name: Run {name} on {vm_name}\n"
+            f"  hosts: {vm_name}\n"
+            f"  become: false\n"
+            f"  gather_facts: true\n"
+            f"  vars:\n"
+            f"    service:\n"
+            f"{service_yaml_indented}"
+            f"  roles:\n"
+            f"    - {name}\n"
+        )
+        playbook_blocks.append(block)
+
+    playbook_content = "\n".join(playbook_blocks)
+    playbook_path = playbooks_dir / f"{vm_name}.yml"
+
     with open(playbook_path, "w") as f:
         f.write(playbook_content)
 
-    print(f"📄 Generated playbook: {playbook_path}")
+    print(f"📄 Generated host playbook: {playbook_path}")
 
 if __name__ == "__main__":
     config = load_config()
@@ -114,17 +119,27 @@ if __name__ == "__main__":
     hosts = {host["name"]: host for host in config.get("hosts", [])}
     template_vars = config.get("template", {}).get("ubuntu", {})
 
+    services_by_vm = {}
+
     for service in services:
-        name = service["name"]
         vm_name = service["vm"]
+        services_by_vm.setdefault(vm_name, []).append(service)
 
-        if vm_name not in hosts:
-            print(f"❌ Error: VM '{vm_name}' for service '{name}' not found in hosts config.")
-            continue
+    for vm_name, services_for_host in services_by_vm.items():
+        all_success = True
+        for service in services_for_host:
+            name = service["name"]
 
-        success = copy_templates_and_validate(service, vm_name)
-        if success:
-            print(f"✅ Role '{name}' successfully generated for VM '{vm_name}'")
-            generate_playbook(name, vm_name, service)
-        else:
-            print(f"⚠️  Role '{name}' was not fully generated due to missing variables.")
+            if vm_name not in hosts:
+                print(f"❌ Error: VM '{vm_name}' for service '{name}' not found in hosts config.")
+                all_success = False
+                continue
+
+            success = copy_templates_and_validate(service, vm_name)
+            if not success:
+                print(f"⚠️  Role '{name}' was not fully generated for VM '{vm_name}'")
+                all_success = False
+
+        if all_success:
+            print(f"✅ All roles successfully generated for VM '{vm_name}'")
+            generate_playbook_for_host(vm_name, services_for_host)

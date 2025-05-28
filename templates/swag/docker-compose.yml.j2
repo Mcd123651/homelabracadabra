@@ -1,0 +1,23 @@
+services:
+  swag:
+    image: lscr.io/linuxserver/swag
+    container_name: swag
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - cloudflared
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ service.timezone | default("America/New_York") }}
+      - URL={{ service.url | default("test.com") }}
+      - SUBDOMAINS=wildcard
+      - VALIDATION=dns
+      - DNSPLUGIN=cloudflare
+    volumes:
+      - {{ ansible_user_dir }}/appdata/swag:/config
+    restart: unless-stopped
+
+networks:
+  cloudflared:
+    name: cloudflared

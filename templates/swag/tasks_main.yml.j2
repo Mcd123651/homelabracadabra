@@ -1,0 +1,50 @@
+- name: Create swag config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Create container without starting it
+  shell: docker compose create
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"
+  register: create_result
+
+- name: Ensure appdata config directory exists
+  file:
+    path: "{{ ansible_user_dir }}/appdata/{{ service.name }}/nginx/site-confs"
+    state: directory
+    recurse: yes
+    mode: "0755"
+
+- name: Ensure cloudflare config directory exists
+  file:
+    path: "{{ ansible_user_dir }}/appdata/{{ service.name }}/dns-conf"
+    state: directory
+    recurse: yes
+    mode: "0755"
+    
+- name: Copy existing config from container (if exists)
+  shell: |
+    docker cp {{ service.name }}:/config {{ ansible_user_dir }}/appdata/{{ service.name }}
+  when: create_result is succeeded
+  ignore_errors: yes
+  
+- name: Deploy templated config default.conf
+  template:
+    src: default.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/{{ service.name }}/nginx/site-confs/default.conf"
+
+- name: Deploy templated config cloudflare.ini
+  template:
+    src: cloudflare.ini.j2
+    dest: "{{ ansible_user_dir }}/appdata/{{ service.name }}/dns-conf/cloudflare.ini"
+
+- name: Start service with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"

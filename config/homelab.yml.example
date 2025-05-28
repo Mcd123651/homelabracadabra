@@ -48,4 +48,11 @@ services:
   - name: cloudflared
     vm: vm-networking
     timezone: America/New_York
-    cloudflared_tunnel_token: s9CAdD.a9c2...
+    cloudflared_tunnel_token: AS9a8scasCA....
+
+  - name: swag
+    vm: vm-networking
+    timezone: America/New_York
+    url: test.com
+    homepage_url: http://192.168.100.105:5055
+    dns_cloudflare_api_token: AS9a8scasCA....

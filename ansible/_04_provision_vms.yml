@@ -1,0 +1,35 @@
+- hosts: all
+  gather_facts: no
+  tasks:
+
+    - name: Attempt to update known_hosts safely
+      block:
+
+        - name: Wait until host is reachable on SSH
+          wait_for:
+            port: "{{ ansible_port | default(22) }}"
+            host: "{{ ansible_host | default(inventory_hostname) }}"
+            timeout: 30
+          delegate_to: localhost
+
+        - name: Remove old SSH host key from known_hosts
+          local_action: >
+            shell ssh-keygen -R "[{{ ansible_host | default(inventory_hostname) }}]:{{ ansible_port }}"
+          delegate_to: localhost
+
+        - name: Add current SSH host key to known_hosts
+          local_action: >
+            shell ssh-keyscan -p {{ ansible_port }} -H {{ ansible_host | default(inventory_hostname) }} >> ~/.ssh/known_hosts
+          delegate_to: localhost
+
+      rescue:
+        - name: Log warning if host key update fails
+          debug:
+            msg: "Skipping host key update for {{ inventory_hostname }} because it is not reachable or resolvable."
+
+- hosts: all
+  become: yes
+  gather_facts: yes
+  roles:
+    - _provision
+

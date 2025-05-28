@@ -107,6 +107,8 @@ resource "proxmox_virtual_environment_vm" "{host['name']}" {{
   node_name = "{node}"
   vm_id     = {vm_id}
 
+  depends_on = [proxmox_virtual_environment_vm.ubuntu_template]
+
   clone {{
     vm_id = {template_id}
     datastore_id = "{template['datasource_id']}"

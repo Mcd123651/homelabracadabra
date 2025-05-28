@@ -46,3 +46,10 @@
         owner: root
         group: root
 
+    - name: Reboot system to apply Docker group membership
+      reboot:
+        msg: "Rebooting after Docker installation"
+        reboot_timeout: 600
+      become: yes
+      tags: [docker]
+

@@ -7,6 +7,8 @@
     script_dir: "{{ playbook_dir }}/../config"
     requirements_file: "{{ script_dir }}/requirements.txt"
     generator_script: "{{ script_dir }}/generate_provisioning_files.py"
+    services_script: "{{ script_dir }}/generate_service_roles.py"
+    terraform_dir: "{{ playbook_dir }}/../terraform_output"
 
   tasks:
 
@@ -24,6 +26,8 @@
     - name: Install Python requirements in venv
       command: "{{ venv_path }}/bin/pip install -r {{ requirements_file }}"
 
-    - name: Run generate_terraform.py inside venv to generate terraform files
+    - name: Run generate_provisioning_files.py inside venv to generate terraform files
       command: "{{ venv_path }}/bin/python {{ generator_script }}"
 
+    - name: Run generate_service_roles.py inside venv to generate service files
+      command: "{{ venv_path }}/bin/python {{ services_script }}"

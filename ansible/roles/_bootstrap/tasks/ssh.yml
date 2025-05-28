@@ -7,14 +7,6 @@
     backup: yes
   notify: Restart ssh
 
-- name: Ensure only one Port line exists
-  shell: |
-    sed -i '/^Port /!b;n;d' /etc/ssh/sshd_config
-  args:
-    warn: false
-  when: ssh_port is defined
-  notify: Restart ssh
-
 - name: Disable password authentication
   lineinfile:
     path: /etc/ssh/sshd_config

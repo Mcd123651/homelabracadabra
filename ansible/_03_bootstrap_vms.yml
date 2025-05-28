@@ -46,4 +46,4 @@
     ansible_port: 22  # Ensure it uses port 22 for root
   gather_facts: false
   roles:
-    - bootstrap
+    - _bootstrap
