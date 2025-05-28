@@ -1,0 +1,3 @@
+---
+- name: install_docker
+  import_tasks: install_docker.yml

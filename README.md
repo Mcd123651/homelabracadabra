@@ -15,6 +15,7 @@ Let’s automate some magic.
 - [🏠Homelab Overview](docs/HOMELAB_OVERVIEW.md)
 - [🍓Pi4 Setup Guide](docs/PI4-README.md)
 
+``` source ~/.venvs/homelab/bin/activate ```
 
 ## Prerequisites
 

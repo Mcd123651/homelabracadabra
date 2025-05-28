@@ -25,7 +25,7 @@ template:
 # VM Configuration
 # ======================
 hosts:
-  - name: vm-router
+  - name: vm-networking
     cores: 2
     memory: 4096
     disk: 32
@@ -33,10 +33,19 @@ hosts:
     gateway: 192.168.100.1
     template: 9000
 
-  - name: vm-database
+  - name: vm-media
     cores: 4
     memory: 8192
     disk: 64
     ip: 192.168.100.102/24
     gateway: 192.168.100.1
     template: 9000
+
+# ======================
+# Services Configuration
+# ======================
+services:
+  - name: cloudflared
+    vm: vm-networking
+    timezone: America/New_York
+    cloudflared_tunnel_token: s9CAdD.a9c2...

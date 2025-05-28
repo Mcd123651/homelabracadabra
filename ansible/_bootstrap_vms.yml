@@ -6,6 +6,21 @@
   vars:
     ansible_port: 22  # Ensure it uses port 22 for root
 
+  pre_tasks:
+    - name: Remove host from known_hosts on control machine
+      become: false
+      delegate_to: localhost
+      command: >
+        ssh-keygen -f "/home/pi/.ssh/known_hosts" -R "{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
+      ignore_errors: true
+
+    - name: Re-scan host key and add to known_hosts
+      become: false
+      delegate_to: localhost
+      shell: >
+        ssh-keyscan -p {{ ansible_port }} {{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }} >> /home/pi/.ssh/known_hosts
+      ignore_errors: true
+
   tasks:
     - name: Load ansible_port from hostvars
       set_fact:

@@ -1,25 +1,35 @@
-- name: Set SSH port to {{ ssh_port }}
+- name: Set custom SSH port
   lineinfile:
     path: /etc/ssh/sshd_config
-    regexp: '^#?Port '
+    regexp: '^#?Port\s+\d+'
     line: "Port {{ ssh_port }}"
+    state: present
+    backup: yes
+  notify: Restart ssh
+
+- name: Ensure only one Port line exists
+  shell: |
+    sed -i '/^Port /!b;n;d' /etc/ssh/sshd_config
+  args:
+    warn: false
+  when: ssh_port is defined
   notify: Restart ssh
 
 - name: Disable password authentication
   lineinfile:
     path: /etc/ssh/sshd_config
-    regexp: '^#?PasswordAuthentication '
+    regexp: '^#?PasswordAuthentication\s+'
     line: 'PasswordAuthentication no'
   notify: Restart ssh
 
 - name: Disable root login
   lineinfile:
     path: /etc/ssh/sshd_config
-    regexp: '^#?PermitRootLogin '
+    regexp: '^#?PermitRootLogin\s+'
     line: 'PermitRootLogin no'
   notify: Restart ssh
 
-- name: Stop and disable ssh.socket if it exists
+- name: Stop and disable ssh.socket (if present)
   systemd:
     name: ssh.socket
     state: stopped
@@ -27,3 +37,9 @@
   ignore_errors: yes
   notify: Restart ssh
 
+- name: Enable and start ssh service
+  systemd:
+    name: ssh
+    enabled: yes
+    state: started
+  notify: Restart ssh

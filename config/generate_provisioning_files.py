@@ -229,7 +229,8 @@ def generate_ansible_inventory(config):
     hosts = config["hosts"]
     inventory_lines = ["[homelab]"]
     for host in hosts:
-        inventory_lines.append(host["ip"].split("/")[0])
+        ip = host["ip"].split("/")[0]
+        inventory_lines.append(f"{host['name']} ansible_host={ip}")
 
     inventory_lines += [
         "\n[homelab:vars]",

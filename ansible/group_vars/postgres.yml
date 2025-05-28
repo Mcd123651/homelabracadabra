@@ -1,5 +1,0 @@
-ip: 10.11.30.50
-ssh_user: admin
-memory: 2G
-disk_size: 20G
-base_data_dir: /opt/data
