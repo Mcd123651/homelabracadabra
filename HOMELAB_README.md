@@ -2,11 +2,21 @@
 
 ## Project Overview
 This homelab configuration includes:
-- Authelia (authentication service)
-- Cloudflared (reverse proxy)
-- SWAG (Simple Web Application Gateway)
-- Ansible playbooks for provisioning
-- Terraform configurations for infrastructure
+- **Authelia**: Multi-factor authentication service with Docker compose and Jinja2 templates
+- **Cloudflared**: Reverse proxy with TLS termination and Cloudflare API integration
+- **SWAG**: Web application gateway with Let's Encrypt support
+- **PostgreSQL**: Database service with Docker compose configuration
+- **Ansible playbooks**: For configuration generation, VM provisioning, and system bootstrapping
+- **Terraform**: Infrastructure-as-code configurations for cloud resources
+
+## Stages of Homelab Setup
+1. **Prerequisites** - Install required software (Ansible, Docker, Git)
+2. **Repository Setup** - Clone repository and configure variables in `homelab.yml`
+3. **Configuration Generation** - Run `_01_generate_configs.yml` to create service templates
+4. **VM Provisioning** - Execute `_02_generate_vms.yml` to define virtual machines
+5. **System Bootstrapping** - Apply `_03_bootstrap_vms.yml` for initial system setup
+6. **Service Deployment** - Use `_04_provision_vms.yml` to deploy all services
+7. **Post-Deployment** - Mount SMB shares and configure final settings
 
 ## Directory Structure
 ```
