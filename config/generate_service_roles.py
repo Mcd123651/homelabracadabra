@@ -9,10 +9,11 @@ BASE_DIR = Path(__file__).parent.resolve()
 CONFIG_PATH = BASE_DIR / "homelab.yml"
 TEMPLATES_PATH = BASE_DIR.parent / "templates"
 ANSIBLE_ROLES_PATH = BASE_DIR.parent / "ansible" / "roles"
-PLAYBOOKS_DIR = BASE_DIR.parent / "ansible" / "playbooks"
+PLAYBOOKS_DIR = BASE_DIR.parent / "ansible"
 
 KNOWN_ANSIBLE_VARS = {
     "ansible_user_dir",
+    "ansible_user",
     "inventory_hostname",
     "ansible_hostname",
     "ansible_os_family",
@@ -20,6 +21,8 @@ KNOWN_ANSIBLE_VARS = {
     "ansible_architecture",
     "ansible_facts",
     "ansible_env",
+    "db_list",
+    "db_name",
     # add more as needed
 }
 
@@ -28,11 +31,23 @@ def load_config():
         return yaml.safe_load(f)
 
 def extract_jinja_variables(template_path):
-    with open(template_path, 'r') as f:
-        source = f.read()
-    env = jinja2.Environment()
-    ast = env.parse(source)
-    return meta.find_undeclared_variables(ast)
+    try:
+        with open(template_path, 'r') as f:
+            source = f.read()
+        env = jinja2.Environment()
+        ast = env.parse(source)
+        return meta.find_undeclared_variables(ast)
+    except jinja2.exceptions.TemplateSyntaxError as e:
+        print(f"\n❌ TemplateSyntaxError in file: {template_path}")
+        print(f"   → Line {e.lineno}: {e.message}")
+        # Optional: show the line from the file for context
+        try:
+            lines = source.splitlines()
+            if 0 < e.lineno <= len(lines):
+                print(f"   → Content: {lines[e.lineno - 1]}")
+        except Exception:
+            pass
+        raise  # re-raise to preserve stack trace
 
 def copy_templates_and_validate(service, vm_name):
     name = service["name"]
@@ -54,7 +69,6 @@ def copy_templates_and_validate(service, vm_name):
         if file.name.endswith(".j2"):
             required_vars = extract_jinja_variables(file)
 
-            # Prepare context for variable checking
             context = {
                 **template_vars,
                 **service,
@@ -62,10 +76,18 @@ def copy_templates_and_validate(service, vm_name):
                 "host": hosts.get(vm_name, {}),
             }
 
-            missing_vars = [
-                var for var in required_vars
-                if var not in context and var not in KNOWN_ANSIBLE_VARS
-            ]
+            missing_vars = []
+
+            for var in required_vars:
+                if var in KNOWN_ANSIBLE_VARS:
+                    continue
+                if var in context:
+                    continue
+                if var.startswith("service."):
+                    nested_key = var.split('.', 1)[1]
+                    if nested_key in context.get("service", {}):
+                        continue
+                missing_vars.append(var)
 
             if missing_vars:
                 print(f"❌ Error: Missing required variables in '{file.name}' for service '{name}': {missing_vars}")
@@ -73,7 +95,7 @@ def copy_templates_and_validate(service, vm_name):
                 continue
 
             # Copy file to templates or tasks/main.yml
-            if "main" in file.name:
+            if file.name == 'tasks_main.yml.j2':
                 dest = role_tasks_path / "main.yml"
             else:
                 dest = role_templates_path / file.name
@@ -143,3 +165,21 @@ if __name__ == "__main__":
         if all_success:
             print(f"✅ All roles successfully generated for VM '{vm_name}'")
             generate_playbook_for_host(vm_name, services_for_host)
+
+    # --- New part: generate _05_deploy_services.yml in deploy order ---
+
+    def get_deploy_order(vm_name):
+        host = hosts.get(vm_name, {})
+        return host.get("deploy_order", 9999)  # Default high number if missing
+
+    ordered_vms = sorted(services_by_vm.keys(), key=get_deploy_order)
+
+    deploy_playbook_path = PLAYBOOKS_DIR / "_05_deploy_services.yml"
+    PLAYBOOKS_DIR.mkdir(parents=True, exist_ok=True)
+
+    with open(deploy_playbook_path, "w") as f:
+        f.write("---\n")
+        for vm in ordered_vms:
+            f.write(f"- import_playbook: {vm}.yml\n")
+
+    print(f"✅ Generated deployment playbook: {deploy_playbook_path}")

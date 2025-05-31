@@ -1,0 +1,66 @@
+- name: Create Authelia config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Deploy README.md
+  template:
+    src: README.md.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/README.md"
+
+- name: Create container without starting it
+  shell: docker compose create
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"
+  register: create_result
+
+- name: Copy existing config from container (if exists)
+  shell: docker cp {{ service.name }}:/config {{ ansible_user_dir }}/appdata/{{ service.name }}
+  when: create_result is succeeded
+  ignore_errors: yes
+  become: true  # Required to bypass permission issues with chmod
+
+- name: Fix ownership of config directory (optional)
+  file:
+    path: "{{ ansible_user_dir }}/appdata/{{ service.name }}/config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: yes
+  become: true
+
+- name: Deploy templated config configuration.yml
+  template:
+    src: configuration.yml.j2
+    dest: "{{ ansible_user_dir }}/appdata/{{ service.name }}/config/configuration.yml"
+
+- name: Deploy templated config users_database.yml
+  template:
+    src: users_database.yml.j2
+    dest: "{{ ansible_user_dir }}/appdata/{{ service.name }}/config/users_database.yml"
+
+# Optional: Install pg_isready if not already present
+- name: Ensure PostgreSQL client tools are installed
+  apt:
+    name: postgresql-client
+    state: present
+  become: true
+
+# Wait for Postgres to be ready on remote host
+- name: Wait for remote Postgres to become available
+  when: service.storage == "postgres"
+  shell: pg_isready -h {{ service.postgres_host }} -p {{ service.postgres_port }} -U {{ service.postgres_user }}
+  register: pg_ready
+  retries: 10
+  delay: 3
+  until: pg_ready.rc == 0
+  changed_when: false
+
+- name: Start service with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"

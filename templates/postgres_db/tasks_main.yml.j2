@@ -1,0 +1,40 @@
+- name: Create postgres config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Deploy README.md
+  template:
+    src: README.md.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/README.md"
+
+- name: Start service with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"
+
+
+- name: Wait for Postgres to become available
+  shell: docker exec postgres_db pg_isready -U docker_user -d {{ service.postgres_db }}
+  register: pg_ready
+  retries: 10
+  delay: 3
+  until: pg_ready.rc == 0
+
+- name: Ensure additional databases exist
+  vars:
+    db_list: "{{ service.additional_dbs | default([]) }}"
+  loop: "{{ db_list }}"
+  loop_control:
+    loop_var: db_name
+  shell: |
+    docker compose exec -T db psql -U docker_user -tc \
+    "SELECT 1 FROM pg_database WHERE datname='{{ db_name }}'" | grep -q 1 || \
+    docker compose exec -T db createdb -U docker_user {{ db_name }}
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"

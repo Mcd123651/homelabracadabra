@@ -1,0 +1,64 @@
+---
+- name: Mount SMB Shares for Media and Torrents
+  hosts: all
+  become: true
+
+  vars:
+    smb_server: "{{ homelab_config.smb_shares.server }}"
+    smb_user: "{{ homelab_config.smb_shares.user }}"
+    smb_password: "{{ homelab_config.smb_shares.password }}"
+    smb_uid: "{{ homelab_config.smb_shares.uid }}"
+    smb_gid: "{{ homelab_config.smb_shares.gid }}"
+    smb_shares: "{{ homelab_config.smb_shares.shares }}"
+
+  tasks:
+    - name: Ensure CIFS utils is installed
+      apt:
+        name: cifs-utils
+        state: present
+        update_cache: true
+
+    - name: Ensure required CIFS dependencies are installed
+      apt:
+        name:
+          - keyutils
+          - libkeyutils1
+          - libcap2
+          - libc6
+        state: present
+        update_cache: true
+
+    - name: Create mount points
+      file:
+        path: "{{ item.mount_point }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ smb_shares }}"
+
+    - name: Create SMB credentials file
+      copy:
+        dest: /etc/smb-credentials
+        content: |
+          username={{ smb_user }}
+          password={{ smb_password }}
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Mount SMB shares
+      mount:
+        src: "//{{ smb_server }}/{{ item.share }}"
+        path: "{{ item.mount_point }}"
+        fstype: cifs
+        opts: "credentials=/etc/smb-credentials,vers=3.0,uid={{ smb_uid }},gid={{ smb_gid }},file_mode=0664,dir_mode=0775"
+        state: mounted
+      loop: "{{ smb_shares }}"
+
+    - name: Ensure entries exist in fstab
+      mount:
+        src: "//{{ smb_server }}/{{ item.share }}"
+        path: "{{ item.mount_point }}"
+        fstype: cifs
+        opts: "credentials=/etc/smb-credentials,vers=3.0,uid={{ smb_uid }},gid={{ smb_gid }},file_mode=0664,dir_mode=0775"
+        state: present
+      loop: "{{ smb_shares }}"

@@ -3,56 +3,100 @@
 # ======================
 global:
   vm_ssh_port: 2222
-  subnets: ["192.168.100.0/24"]
+  subnets: ["192.168.100.0/24", "192.168.110.0/24"]
 
 proxmox:
-  host: "192.168.100.10"        # Replace with your Proxmox host IP
-  target_node: "lab-node"       # Replace with your actual node name
+  host: "192.168.100.10"
+  target_node: "lab-node"
 
 template:
   ubuntu:
-    name: "ubuntu-cloudinit-template"
-    image: "ubuntu-cloudimg-amd64.img"
+    name: "ubuntu-2404-cloudinit-template"
+    image: "custom-server-cloudimg-amd64.img"
     vmid: 9000
-    datasource_id: "default-datastore"
-    disk: 20
+    datasource_id: "labvms"
+    disk: 15
     memory: 1024
-    user: "labadmin"
-    ssh_key: "/home/user/.ssh/id_rsa_lab.pub"
+    user: "labuser"
+    ssh_key: "/home/labuser/.ssh/id_rsa_lab.pub"
     tags: ["template", "ubuntu"]
+
+smb_shares:
+  server: "192.168.100.20"
+  user: "user@example.com"
+  password: "ChangeMe123!"
+  uid: 1000
+  gid: 1000
+  shares:
+    - name: media
+      share: MediaShare
+      mount_point: /mnt/media
+    - name: torrents
+      share: TorrentsShare
+      mount_point: /mnt/torrents
 
 # ======================
 # VM Configuration
 # ======================
 hosts:
-  - name: vm-networking
-    cores: 2
-    memory: 4096
-    disk: 32
-    ip: 192.168.100.101/24
-    gateway: 192.168.100.1
-    template: 9000
-
-  - name: vm-media
+  - name: vm-database01
     cores: 4
     memory: 8192
     disk: 64
+    ip: 192.168.100.101/24
+    gateway: 192.168.100.1
+    template: 9000
+    deploy_order: 1
+
+  - name: vm-networking01
+    cores: 2
+    memory: 8192
+    disk: 32
     ip: 192.168.100.102/24
     gateway: 192.168.100.1
     template: 9000
+    deploy_order: 2
 
 # ======================
-# Services Configuration
+# Core Services Configuration
 # ======================
 services:
   - name: cloudflared
-    vm: vm-networking
+    vm: vm-networking01
     timezone: America/New_York
-    cloudflared_tunnel_token: AS9a8scasCA....
+    cloudflared_tunnel_token: "example-tunnel-token-1234567890abcdef"
+
+  - name: authelia
+    vm: vm-networking01
+    timezone: America/New_York
+    port: 9091
+    url: example.com
+    jwt_secret: "replace-with-jwt-secret"
+    session_secret: "replace-with-session-secret"
+    storage: postgres
+    storage_encryption_key: "replace-with-storage-encryption-key"
+    postgres_host: 192.168.100.101
+    postgres_port: 5432
+    postgres_db: authelia
+    postgres_user: authelia_user
+    postgres_pw: authelia_password
+    admin_user: adminuser
+    admin_email: admin@example.com
+    guest_user: guestuser
+    notifier: smtp
+    smtp_username: "smtpuser@example.com"
+    smtp_gmail_app_pw: "smtp-app-password"
 
   - name: swag
-    vm: vm-networking
+    vm: vm-networking01
     timezone: America/New_York
-    url: test.com
-    homepage_url: http://192.168.100.105:5055
-    dns_cloudflare_api_token: AS9a8scasCA....
+    url: example.com
+    dns_cloudflare_api_token: "replace-with-cloudflare-api-token"
+    homepage_url: http://192.168.100.200:5055
+    authelia: false
+
+  - name: postgres_db
+    vm: vm-database01
+    postgres_db: homelab
+    port: 5432
+    additional_dbs: ["authelia", "wikijs"]

@@ -1,0 +1,31 @@
+# Authelia Bootstrap Users and SMTP Setup
+
+This setup includes a default `users_database.yml` for bootstrapping Authelia with basic access. **The default password is `123456` – please change it immediately.**
+[SWAG Guide](https://www.authelia.com/integration/proxies/swag/)
+
+
+## Generate Password Hashes
+
+To generate a secure password hash using Argon2id:
+
+```bash
+docker run --rm authelia/authelia:latest authelia crypto hash generate --password 123456
+```
+
+### Gmail SMTP Example
+```bash
+notifier:
+  smtp:
+    username: <email address>
+    password: <gmail app password>  # Not your Gmail password – see below!
+    address: smtp.gmail.com:587
+    sender: <email address>
+    subject: "[Authelia] {title}"
+    startup_check_address: <email address>
+    identifier: gmail.com
+    tls:
+      server_name: smtp.gmail.com
+      skip_verify: false
+    disable_require_tls: false
+    disable_starttls: false
+```

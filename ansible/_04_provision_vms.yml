@@ -12,14 +12,24 @@
             timeout: 30
           delegate_to: localhost
 
-        - name: Remove old SSH host key from known_hosts
+        - name: Remove all existing SSH host keys from known_hosts
           local_action: >
-            shell ssh-keygen -R "[{{ ansible_host | default(inventory_hostname) }}]:{{ ansible_port }}"
+            shell >
+              ssh-keygen -R "{{ ansible_host | default(inventory_hostname) }}" || true &&
+              ssh-keygen -R "[{{ ansible_host | default(inventory_hostname) }}]:{{ ansible_port | default(22) }}" || true
           delegate_to: localhost
 
-        - name: Add current SSH host key to known_hosts
+        - name: Fetch current SSH host key into temp file
           local_action: >
-            shell ssh-keyscan -p {{ ansible_port }} -H {{ ansible_host | default(inventory_hostname) }} >> ~/.ssh/known_hosts
+            shell ssh-keyscan -p {{ ansible_port | default(22) }} -H {{ ansible_host | default(inventory_hostname) }}
+          register: scanned_key
+          delegate_to: localhost
+
+        - name: Write new host key, replacing known_hosts entry
+          copy:
+            content: "{{ scanned_key.stdout }}"
+            dest: "~/.ssh/known_hosts"
+            mode: "0600"
           delegate_to: localhost
 
       rescue:
@@ -32,4 +42,3 @@
   gather_facts: yes
   roles:
     - _provision
-

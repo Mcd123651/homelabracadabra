@@ -1,0 +1,20 @@
+services:
+  authelia:
+    container_name: authelia
+    image: 'authelia/authelia'
+    restart: 'unless-stopped'
+    volumes:
+      - {{ ansible_user_dir }}/appdata/authelia/config:/config
+    environment:
+      - PUID=1000
+      - PGID=1000    
+      - TZ={{ service.timezone | default("America/New_York") }}
+    networks:
+      - cloudflared
+    ports:
+      - {{ service.port }}:{{ service.port }}
+
+networks:
+  cloudflared:
+    name: cloudflared
+    external: True

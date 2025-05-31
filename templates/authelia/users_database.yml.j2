@@ -1,0 +1,13 @@
+users:
+  {{ service.admin_user }}:
+    displayname: "{{ service.admin_user }}"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$CtOw4RFPBtyClndXLHcqYA$UrQIGbA0YBo6Ws8IXVsoUmMSdDxlqE+jy+vNuggawCY"
+    email: {{ service.admin_email }}
+    groups:
+      - admins
+  {{ service.guest_user }}:
+    displayname: "{{ service.guest_user }}"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$CtOw4RFPBtyClndXLHcqYA$UrQIGbA0YBo6Ws8IXVsoUmMSdDxlqE+jy+vNuggawCY"
+    email: {{ service.admin_user }}
+    groups:
+      - guest

@@ -21,6 +21,18 @@
     recurse: yes
     mode: "0755"
 
+- name: Ensure swag proxy-confs is writable
+  file:
+    path: "{{ ansible_user_dir }}/appdata/swag/nginx/proxy-confs"
+    mode: '0755'
+  become: true
+
+- name: Deploy templated config default.conf
+  template:
+    src: authelia.subdomain.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/swag/nginx/proxy-confs/authelia.subdomain.conf"
+  become: true
+
 - name: Ensure cloudflare config directory exists
   file:
     path: "{{ ansible_user_dir }}/appdata/{{ service.name }}/dns-conf"
@@ -38,6 +50,16 @@
   template:
     src: default.conf.j2
     dest: "{{ ansible_user_dir }}/appdata/{{ service.name }}/nginx/site-confs/default.conf"
+
+- name: Deploy templated config authelia-server.conf
+  template:
+    src: authelia-server.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/{{ service.name }}/nginx/authelia-server.conf"
+
+- name: Deploy templated config authelia-location.conf
+  template:
+    src: authelia-location.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/{{ service.name }}/nginx/authelia-location.conf"
 
 - name: Deploy templated config cloudflare.ini
   template:
