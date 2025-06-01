@@ -1,3 +1,5 @@
+🡐[🧙‍♂️ homelabracadabra](../README.md)
+
 # Guide to Setting Up a Cloudflare Tunnel with Custom Domain and Zero Trust
 
 This guide walks you through setting up a Cloudflare Tunnel to securely expose your internal service (e.g., swag reverse proxy) through a custom domain with Cloudflare Zero Trust.

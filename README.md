@@ -23,6 +23,14 @@ homelab.yml → Generate → Generate → Bootstrap → Provision → Deploy →
 
 Using a master `homelab.yml` config file and a suite of ansible playbooks, this repository enables fully automated deployment through six distinct stages:
 
+## 🔗 Quick Links
+
+- [🍓 Pi 4 Homelab Controller Setup Guide](docs/PI4-README.md)
+- [☁️ Cloudflare Tunnel Setup Guide](docs/CF_TUNNEL_README.md)
+- [🔧 Configuration Examples](config/homelab.yml.example)
+- [🛠️ Adding Custom Services](#-adding-custom-services)
+- [🐛 Troubleshooting Guide](#-troubleshooting)
+
 ### Stage 1: Generate Configurations
 **Playbook:** `01-generate_configs.yml`
 
@@ -196,7 +204,8 @@ templates/
   ├── swag/
   ├── authelia/
   ├── cloudflared/
-  └── postgres_db/
+  ├── postgres_db/
+  └── [your_custom_service]/          # Your custom service templates
 
 terraform_output/                   # GENERATED: 01-generate_configs.yml
 ```
@@ -314,6 +323,307 @@ services:
     port: 5432
     additional_dbs: ["authelia", "wikijs"]
 ```
+
+## 🛠️ Adding Custom Services
+
+One of the most powerful features of homelabracadabra is its extensibility. You can easily add your own services by following the established template pattern. Here's how to extend your homelab with custom services:
+
+### Step 1: Add Service to Configuration
+
+First, add your new service to the `services` section of your `config/homelab.yml`:
+
+```yaml
+services:
+  # ... existing services ...
+  
+  - name: my_custom_service
+    vm: vm-networking01
+    timezone: America/New_York
+    port: 8080
+    custom_param1: "value1"
+    custom_param2: "value2"
+    environment_vars:
+      - "VAR1=value1"
+      - "VAR2=value2"
+```
+
+### Step 2: Create Service Template Directory
+
+Create a new directory in `templates/` matching your service name:
+
+```bash
+templates/my_custom_service/
+├── docker-compose.yml.j2
+├── tasks_main.yml.j2
+└── README.md.j2
+```
+
+### Step 3: Define Service Templates
+
+#### **docker-compose.yml.j2**
+This is your Docker Compose configuration with Jinja2 templating:
+
+```yaml
+version: '3.8'
+
+services:
+  {{ service.name }}:
+    image: my-custom-app:latest
+    container_name: {{ service.name }}
+    restart: unless-stopped
+    ports:
+      - "{{ service.port }}:8080"
+    environment:
+      - TZ={{ service.timezone }}
+{% if service.environment_vars is defined %}
+{% for env_var in service.environment_vars %}
+      - {{ env_var }}
+{% endfor %}
+{% endif %}
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+    networks:
+      - homelab_network
+
+networks:
+  homelab_network:
+    external: true
+```
+
+#### **tasks_main.yml.j2**
+This defines the Ansible tasks for deploying your service:
+
+```yaml
+- name: Create {{ service.name }} config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+- name: Create {{ service.name }} data directories
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}/{{ item }}"
+    state: directory
+  loop:
+    - config
+    - data
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Deploy README.md
+  template:
+    src: README.md.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/README.md"
+
+- name: Start {{ service.name }} with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"
+
+- name: Wait for {{ service.name }} to become available
+  uri:
+    url: "http://localhost:{{ service.port }}/health"
+    method: GET
+  register: service_health
+  retries: 10
+  delay: 5
+  until: service_health.status == 200
+  ignore_errors: yes
+
+- name: Display service status
+  debug:
+    msg: "{{ service.name }} is running on port {{ service.port }}"
+```
+
+#### **README.md.j2**
+Documentation for your deployed service:
+
+```markdown
+# {{ service.name | title }} Service
+
+## Overview
+This service is deployed on {{ service.vm }} and accessible on port {{ service.port }}.
+
+## Configuration
+- **Container Name**: {{ service.name }}
+- **Port**: {{ service.port }}
+- **Timezone**: {{ service.timezone }}
+
+## Access
+- **Local**: http://{{ service.vm }}:{{ service.port }}
+- **External**: Available through SWAG reverse proxy if configured
+
+## Management
+```bash
+# Navigate to service directory
+cd ~/{{ service.name }}
+
+# View logs
+docker compose logs -f
+
+# Restart service
+docker compose restart
+
+# Update service
+docker compose pull && docker compose up -d
+```
+
+## File Locations
+- **Config**: `~/{{ service.name }}/config/`
+- **Data**: `~/{{ service.name }}/data/`
+- **Compose File**: `~/{{ service.name }}/docker-compose.yml`
+```
+
+### Real-World Example: Adding Jellyfin Media Server
+
+Here's a complete example of adding Jellyfin to your homelab:
+
+#### **Configuration in homelab.yml:**
+```yaml
+services:
+  - name: jellyfin
+    vm: vm-media01
+    timezone: America/New_York
+    port: 8096
+    media_path: /mnt/media
+    config_path: /opt/jellyfin/config
+    cache_path: /opt/jellyfin/cache
+```
+
+#### **templates/jellyfin/docker-compose.yml.j2:**
+```yaml
+version: '3.8'
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: {{ service.name }}
+    restart: unless-stopped
+    ports:
+      - "{{ service.port }}:8096"
+    environment:
+      - TZ={{ service.timezone }}
+      - JELLYFIN_PublishedServerUrl=http://{{ service.vm }}:{{ service.port }}
+    volumes:
+      - {{ service.config_path }}:/config
+      - {{ service.cache_path }}:/cache
+      - {{ service.media_path }}:/media:ro
+    devices:
+      - /dev/dri:/dev/dri  # For hardware acceleration
+    networks:
+      - homelab_network
+
+networks:
+  homelab_network:
+    external: true
+```
+
+#### **templates/jellyfin/tasks_main.yml.j2:**
+```yaml
+- name: Create {{ service.name }} directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - "{{ ansible_user_dir }}/{{ service.name }}"
+    - "{{ service.config_path }}"
+    - "{{ service.cache_path }}"
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Deploy README.md
+  template:
+    src: README.md.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/README.md"
+
+- name: Start {{ service.name }} with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"
+
+- name: Wait for {{ service.name }} to become available
+  uri:
+    url: "http://localhost:{{ service.port }}"
+    method: GET
+  register: jellyfin_health
+  retries: 15
+  delay: 10
+  until: jellyfin_health.status == 200
+  ignore_errors: yes
+
+- name: Display {{ service.name }} access information
+  debug:
+    msg: |
+      {{ service.name | title }} is now running!
+      Access it at: http://{{ service.vm }}:{{ service.port }}
+      Complete the setup wizard in your browser.
+```
+
+### Advanced Service Templates
+
+For more complex services, you can include additional features:
+
+#### **Database Dependencies:**
+```yaml
+- name: Wait for database to be ready
+  shell: docker exec postgres_db pg_isready -U {{ service.db_user }} -d {{ service.db_name }}
+  register: db_ready
+  retries: 10
+  delay: 3
+  until: db_ready.rc == 0
+```
+
+#### **Configuration File Templates:**
+```yaml
+- name: Deploy service configuration
+  template:
+    src: app.conf.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/config/app.conf"
+  notify: restart service
+```
+
+#### **Conditional Tasks:**
+```yaml
+- name: Setup LDAP authentication
+  template:
+    src: ldap.conf.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/config/ldap.conf"
+  when: service.auth_method == "ldap"
+```
+
+### Best Practices for Custom Services
+
+1. **Use Descriptive Variable Names**: Make your templates readable with clear variable names
+2. **Include Health Checks**: Always verify your service starts correctly
+3. **Document Everything**: Use comprehensive README templates
+4. **Handle Dependencies**: Check for required services before deployment
+5. **Use Proper File Permissions**: Ensure containers can access mounted volumes
+6. **Test Thoroughly**: Validate your templates before committing
+
+### Regenerating Service Roles
+
+After adding new service templates, regenerate your deployment configuration:
+
+```bash
+ansible-playbook -i inventory 01-generate_configs.yml
+```
+
+This will automatically:
+- Detect your new service templates
+- Generate corresponding Ansible roles
+- Update the deployment playbook
+- Prepare everything for Stage 5 deployment
+
+Your custom services will now be deployed alongside the core services during the standard deployment process!
 
 ## 🔐 Security Best Practices
 
