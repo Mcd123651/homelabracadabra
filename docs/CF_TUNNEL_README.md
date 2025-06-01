@@ -63,7 +63,11 @@ This setting disables strict certificate verification for backend services behin
 
 - Go back to the normal Cloudflare dashboard for your domain.
 - Navigate to **Security > WAF / Firewall Rules**.
-- Create a rule to block traffic from outside the US, for example: BLOCK: ip.src.country ne "US"
+- Create a rule to block traffic from outside the US, for example: 
+
+Type: BLOCK: 
+
+Rule: ```ip.src.country ne "US"```
 
 
 This restricts access to only users originating from the US.
@@ -72,7 +76,7 @@ This restricts access to only users originating from the US.
 
 ## 8. Special Rule for Audiobookshelf Android App
 
-- Create a new firewall rule to target the Audiobookshelf app’s hostname, e.g.: (http.host eq "audiobooks.mcdflix.com")
+- Create a new firewall rule to target the Audiobookshelf app’s hostname, e.g.: ```(http.host eq "audiobookshelf.domain.com")```
 
 
 - For this rule, **skip setting the “Security Level”** to avoid blocking or interfering with the app’s requests.
