@@ -14,6 +14,7 @@ services:
       - SUBDOMAINS=wildcard
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare
+      - SWAG_AUTORELOAD=True
     volumes:
       - {{ ansible_user_dir }}/appdata/swag:/config
     restart: unless-stopped

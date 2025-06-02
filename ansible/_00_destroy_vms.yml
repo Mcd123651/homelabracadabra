@@ -1,0 +1,13 @@
+---
+- name: Create venv and run config generator
+  hosts: localhost
+  gather_facts: no
+  vars:
+    terraform_dir: "{{ playbook_dir }}/../terraform_output"
+
+  tasks:
+
+    - name: Destroy existing Terraform resources
+      command: terraform destroy -auto-approve
+      args:
+        chdir: "{{ terraform_dir }}"

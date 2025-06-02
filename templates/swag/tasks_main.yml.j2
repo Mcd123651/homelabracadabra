@@ -14,9 +14,16 @@
     chdir: "{{ ansible_user_dir }}/{{ service.name }}"
   register: create_result
 
-- name: Ensure appdata config directory exists
+- name: Ensure site-confs config directory exists
   file:
     path: "{{ ansible_user_dir }}/appdata/{{ service.name }}/nginx/site-confs"
+    state: directory
+    recurse: yes
+    mode: "0755"
+
+- name: Ensure proxy-confs config directory exists
+  file:
+    path: "{{ ansible_user_dir }}/appdata/{{ service.name }}/nginx/proxy-confs"
     state: directory
     recurse: yes
     mode: "0755"

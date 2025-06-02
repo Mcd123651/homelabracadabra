@@ -18,12 +18,7 @@
   args:
     chdir: "{{ ansible_user_dir }}/{{ service.name }}"
   register: create_result
-
-- name: Copy existing config from container (if exists)
-  shell: docker cp {{ service.name }}:/config {{ ansible_user_dir }}/appdata/{{ service.name }}
-  when: create_result is succeeded
-  ignore_errors: yes
-  become: true  # Required to bypass permission issues with chmod
+  
 
 - name: Fix ownership of config directory (optional)
   file:

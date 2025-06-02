@@ -1,3 +1,4 @@
+# MAIN
 .venv/
 *terraform.tfvars
 .terraform
@@ -5,6 +6,17 @@
 *terraform.tfstate*
 config/homelab.yml
 terraform_output/
-
+CODEME.md
 config/generate_configs.py
 config/generate_provision_script.py
+
+# USER
+templates/audiobookshelf/
+ansible/inventory.ini
+ansible/vm-*
+ansible/_05_deploy_services.yml
+ansible/roles/audiobookshelf
+ansible/roles/authelia
+ansible/roles/cloudflared
+ansible/roles/postgres_db
+ansible/roles/swag
