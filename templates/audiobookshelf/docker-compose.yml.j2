@@ -1,0 +1,13 @@
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    environment:
+      - AUDIOBOOKSHELF_UID=1000
+      - AUDIOBOOKSHELF_GID=1000
+    volumes:
+      - {{ ansible_user_dir }}/appdata/audiobookshelf/config:/config
+      - {{ ansible_user_dir }}/appdata/audiobookshelf/metadata:/metadata
+    ports:
+      - {{ service.port }}:80
+
