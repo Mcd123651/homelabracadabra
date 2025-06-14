@@ -1,0 +1,27 @@
+## Version 2024/07/16
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name audiobooks.*;
+
+    include /config/nginx/ssl.conf;
+
+    client_max_body_size 0;
+
+
+    location / {
+        proxy_pass_request_headers on;
+        proxy_set_header Authorization $http_authorization;
+
+        include /config/nginx/proxy.conf;
+        include /config/nginx/resolver.conf;
+
+        set $upstream_app {{ (homelab_config.hosts | selectattr('name', 'equalto', service.vm) | first).ip.split('/')[0] }};
+        set $upstream_port {{ service.port }};
+        set $upstream_proto http;
+        proxy_pass $upstream_proto://$upstream_app:$upstream_port;
+    }
+    
+}

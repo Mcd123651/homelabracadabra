@@ -19,12 +19,14 @@
     chdir: "{{ ansible_user_dir }}/{{ service.name }}"
 
 
+
 - name: Wait for Postgres to become available
   shell: docker exec postgres_db pg_isready -U docker_user -d {{ service.postgres_db }}
   register: pg_ready
   retries: 10
   delay: 3
   until: pg_ready.rc == 0
+
 
 - name: Ensure additional databases exist
   vars:

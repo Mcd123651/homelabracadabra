@@ -1,0 +1,20 @@
+services:
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ={{ service.timezone | default("America/New_York") }}
+      - PORT={{ service.port }}
+    ports:
+      - {{ service.port }}:{{ service.port }}
+    volumes:
+      - {{ ansible_user_dir }}/appdata/overseerr/config:/app/config
+    restart: unless-stopped
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net
+    external: True

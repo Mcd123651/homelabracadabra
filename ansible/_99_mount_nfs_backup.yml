@@ -1,0 +1,51 @@
+---
+- name: Mount NFS Backup Share
+  hosts: all
+  become: true
+
+  vars:
+    nfs_server: "{{ homelab_config.nfs_backup.server }}"
+    nfs_export: "{{ homelab_config.nfs_backup.nfs_export }}"
+    nfs_mount_point: "{{ homelab_config.nfs_backup.mount_point }}"
+
+  tasks:
+    - name: Ensure NFS client is installed
+      apt:
+        name: nfs-common
+        state: present
+        update_cache: true
+
+    - name: Create mount point directory
+      file:
+        path: "{{ nfs_mount_point }}"
+        state: directory
+        mode: '0755'
+
+    - name: Mount NFS share
+      mount:
+        src: "{{ nfs_server }}:{{ nfs_export }}"
+        path: "{{ nfs_mount_point }}"
+        fstype: nfs
+        opts: defaults
+        state: mounted
+
+    - name: Ensure NFS share is persistent in fstab
+      mount:
+        src: "{{ nfs_server }}:{{ nfs_export }}"
+        path: "{{ nfs_mount_point }}"
+        fstype: nfs
+        opts: defaults
+        state: present
+
+    - name: Ensure backup mount point has correct ownership
+      file:
+        path: /mnt/backup
+        owner: 1000
+        group: 1000
+        recurse: yes
+
+    - name: Ensure backup mount point has correct permissions
+      file:
+        path: /mnt/backup
+        mode: '0775'
+        recurse: yes

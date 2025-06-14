@@ -1,0 +1,20 @@
+services:
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ service.timezone | default("America/New_York") }}
+    volumes:
+      - {{ ansible_user_dir }}/appdata/tautulli/config:/app/config
+    ports:
+      - '{{ service.port }}:{{ service.port }}'
+    restart: unless-stopped
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net
+    external: True

@@ -1,0 +1,21 @@
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ service.timezone | default("America/New_York") }}
+    volumes:
+      - {{ ansible_user_dir }}/appdata/radarr/data:/config
+      - /mnt/media/Movies:/movies 
+      - /mnt/torrents:/downloads 
+    ports:
+      - {{ service.port }}:{{ service.port }}
+    restart: unless-stopped
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net

@@ -1,0 +1,16 @@
+services:
+  broker:
+    image: redis:8
+    container_name: redis_broker
+    user: 1000:1000
+    restart: unless-stopped
+    volumes:
+      - {{ ansible_user_dir }}/appdata/redisdata:/data
+    ports:
+      - "{{ service.port }}:{{ service.port }}"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

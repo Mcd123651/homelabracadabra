@@ -1,0 +1,22 @@
+services:
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ service.timezone | default("America/New_York") }}
+    volumes:
+      - {{ ansible_user_dir }}/appdata/sonarr/data:/config
+      - /mnt/media/TV:/tv 
+      - /mnt/torrents:/downloads 
+    ports:
+      - {{ service.port }}:{{ service.port }}
+    restart: unless-stopped
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net
+    external: True

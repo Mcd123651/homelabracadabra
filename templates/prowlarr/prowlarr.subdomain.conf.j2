@@ -1,0 +1,49 @@
+## Version 2024/07/16
+# make sure that your portainer container is named portainer
+# make sure that your dns has a cname set for portainer
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name prowlarr.*;
+
+    include /config/nginx/ssl.conf;
+
+    client_max_body_size 0;
+
+    {% if service.authelia is defined and service.authelia == true %}
+    include /config/nginx/authelia-server.conf;
+    {% else %}
+    # include /config/nginx/authelia-server.conf;
+    {% endif %}
+
+    location / {
+
+        {% if service.authelia is defined and service.authelia == true %}
+include /config/nginx/authelia-location.conf;
+        {% else %}
+# include /config/nginx/authelia-location.conf;
+        {% endif %}
+
+        include /config/nginx/proxy.conf;
+        include /config/nginx/resolver.conf;
+        set $upstream_app {{ (homelab_config.hosts | selectattr('name', 'equalto', service.vm) | first).ip.split('/')[0] }};
+        set $upstream_port {{ service.port }};
+        set $upstream_proto http;
+        proxy_pass $upstream_proto://$upstream_app:$upstream_port;
+
+        proxy_hide_header X-Frame-Options; # Possibly not needed after Portainer 1.20.0
+    }
+
+    location ~ (/portainer)?/api {
+        include /config/nginx/proxy.conf;
+        include /config/nginx/resolver.conf;
+        set $upstream_app {{ (homelab_config.hosts | selectattr('name', 'equalto', service.vm) | first).ip.split('/')[0] }};
+        set $upstream_port {{ service.port }};
+        set $upstream_proto http;
+        proxy_pass $upstream_proto://$upstream_app:$upstream_port;
+
+        proxy_hide_header X-Frame-Options; # Possibly not needed after Portainer 1.20.0
+    }
+}

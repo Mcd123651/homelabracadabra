@@ -1,0 +1,13 @@
+services:
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr
+    ports:
+      - {{ service.port }}:{{ service.port }}
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ={{ service.timezone | default("America/New_York") }}
+    volumes:
+      - {{ ansible_user_dir }}/appdata/prowlarr:/config

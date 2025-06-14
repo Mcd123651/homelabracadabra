@@ -1,0 +1,21 @@
+services:
+  maintainerr:
+    image: ghcr.io/jorenn92/maintainerr:latest
+    container_name: maintainerr
+    user: 1000:1000
+    environment:
+      - TZ={{ service.timezone | default("America/New_York") }}
+    ports:
+      - {{ service.port }}:{{ service.port }}
+    volumes:
+      - type: bind
+        source: {{ ansible_user_dir }}/appdata/maintainerr  
+        target:  /data
+    restart: unless-stopped
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net
+    external: True

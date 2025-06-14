@@ -1,0 +1,15 @@
+services:
+  pdf:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+    container_name: pdf
+    ports:
+      - "{{ service.port }}:{{ service.port }}"
+    volumes:
+      - {{ ansible_user_dir }}/appdata/StirlingPDF/trainingData:/usr/share/tessdata # Required for extra OCR languages
+      - {{ ansible_user_dir }}/appdata/StirlingPDF/extraConfigs:/configs
+      - {{ ansible_user_dir }}/appdata/StirlingPDF/customFiles:/customFiles/
+      - {{ ansible_user_dir }}/appdata/StirlingPDF/logs:/logs/
+      - {{ ansible_user_dir }}/appdata/StirlingPDF/pipeline:/pipeline/
+    environment:
+      - DOCKER_ENABLE_SECURITY=false
+      - LANGS=en_US

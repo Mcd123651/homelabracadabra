@@ -1,0 +1,48 @@
+- name: Create paperless config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Deploy templated config paperless.subdomain.conf
+  template:
+    src: paperless.subdomain.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/swag/nginx/proxy-confs/paperless.subdomain.conf"
+    owner: 1000
+    group: 1000
+    mode: '0644'
+  become: true
+  delegate_to: vm-networking
+
+# Optional: Install pg_isready if not already present
+- name: Ensure PostgreSQL client tools are installed
+  apt:
+    name: postgresql-client
+    state: present
+  become: true
+  
+# Wait for Postgres to be ready on remote host
+- name: Wait for remote Postgres to become available
+  shell: pg_isready -h {{ service.postgres_host }} -p {{ service.postgres_port }} -U {{ service.postgres_user }}
+  register: pg_ready
+  retries: 10
+  delay: 3
+  until: pg_ready.rc == 0
+  changed_when: false
+
+- name: Wait until Redis is healthy on vm-database
+  shell: docker inspect --format='{{ "{{" }}.State.Health.Status{{ "}}" }}' redis_broker
+  register: redis_status
+  until: redis_status.stdout == "healthy"
+  retries: 10
+  delay: 5
+  delegate_to: vm-database
+
+- name: Start service with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"

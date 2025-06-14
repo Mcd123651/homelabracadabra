@@ -1,0 +1,35 @@
+- name: Create paperless config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Deploy templated config paperless.subdomain.conf
+  template:
+    src: paperless_ai.subdomain.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/swag/nginx/proxy-confs/paperless_ai.subdomain.conf"
+    owner: 1000
+    group: 1000
+    mode: '0644'
+  become: true
+  delegate_to: vm-networking
+  
+- name: Wait for Paperless container to become healthy
+  shell: |
+    until [ "$(docker inspect --format='{{ "{{" }} if .State.Health {{ "}}" }}{{ "{{" }} .State.Health.Status {{ "}}" }}{{ "{{" }} else {{ "}}" }}no_healthcheck{{ "{{" }} end {{ "}}" }}' paperless)" = "healthy" ]; do
+      sleep 5
+    done
+  retries: 10
+  delay: 5
+  register: result
+  until: result.rc == 0
+  changed_when: false
+
+- name: Start service with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"

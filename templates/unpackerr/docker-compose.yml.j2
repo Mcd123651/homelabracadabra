@@ -1,0 +1,22 @@
+services:
+  unpackerr:
+    image: golift/unpackerr
+    container_name: unpackerr
+    volumes:
+      - /mnt/torrents:/downloads 
+    restart: always
+    user: 1000:1000
+    environment:
+      - TZ={{ service.timezone | default("America/New_York") }}
+      - UN_LOG_FILE=/downloads/unpackerr.log
+      - UN_SONARR_0_URL=http://sonarr:8989
+      - UN_SONARR_0_API_KEY=351eb61442134cb19b4b0ae7477e6e25
+      - UN_RADARR_0_URL=http://radarr:7878
+      - UN_RADARR_0_API_KEY=0699881fdd144b7fa180b10a9b4aa7f9
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net
+    external: True

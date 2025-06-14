@@ -23,6 +23,7 @@ KNOWN_ANSIBLE_VARS = {
     "ansible_env",
     "db_list",
     "db_name",
+    "homelab_config",
     # add more as needed
 }
 
@@ -109,6 +110,7 @@ def generate_playbook_for_host(vm_name, services_for_host, base_dir=BASE_DIR):
 
     playbook_blocks = []
 
+    # Generate service role blocks
     for service in services_for_host:
         name = service["name"]
         service_yaml = yaml.dump(service, default_flow_style=False, indent=4)
@@ -127,6 +129,7 @@ def generate_playbook_for_host(vm_name, services_for_host, base_dir=BASE_DIR):
         )
         playbook_blocks.append(block)
 
+    # Write final playbook
     playbook_content = "\n".join(playbook_blocks)
     playbook_path = playbooks_dir / f"{vm_name}.yml"
 

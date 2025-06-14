@@ -1,0 +1,40 @@
+- name: Create wikijs config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+- name: Deploy templated config wikijs.subdomain.conf
+  template:
+    src: wikijs.subdomain.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/swag/nginx/proxy-confs/wikijs.subdomain.conf"
+    owner: 1000
+    group: 1000
+    mode: '0644'
+  become: true
+  delegate_to: vm-networking
+
+# Optional: Install pg_isready if not already present
+- name: Ensure PostgreSQL client tools are installed
+  apt:
+    name: postgresql-client
+    state: present
+  become: true
+  
+# Wait for Postgres to be ready on remote host
+- name: Wait for remote Postgres to become available
+  shell: pg_isready -h {{ service.postgres_host }} -p {{ service.postgres_port }} -U {{ service.postgres_user }}
+  register: pg_ready
+  retries: 10
+  delay: 3
+  until: pg_ready.rc == 0
+  changed_when: false
+
+- name: Start service with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"

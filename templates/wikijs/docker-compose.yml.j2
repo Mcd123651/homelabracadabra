@@ -1,0 +1,18 @@
+services:
+  wiki:
+    image: ghcr.io/requarks/wiki:2
+    container_name: wikijs
+    user: 1000:1000
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST={{ service.postgres_host }}
+      - DB_PORT={{ service.postgres_port }}
+      - DB_USER={{ service.postgres_user }}
+      - DB_PASS={{ service.postgres_pw }}
+      - DB_NAME={{ service.postgres_db }}
+    restart: unless-stopped
+    volumes:
+      - {{ ansible_user_dir }}/appdata/wikijs/etc
+    ports:
+      - {{ service.port }}:3000
+

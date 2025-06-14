@@ -1,0 +1,22 @@
+services:
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - SECRET_ENCRYPTION_KEY={{ service.secret_encryption_key }}
+    ports:
+      - {{ service.port }}:{{ service.port }}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - {{ ansible_user_dir }}/appdata/homarr/appdata:/appdata
+    restart: unless-stopped
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net
+    external: True
+

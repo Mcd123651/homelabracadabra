@@ -1,0 +1,32 @@
+services:  
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    user: 1000:1000
+    networks:
+      - paperless-net
+    environment:
+      PAPERLESS_DBHOST: {{ service.postgres_host }} 
+      PAPERLESS_DBPORT: {{ service.postgres_port }} 
+      PAPERLESS_DBNAME: {{ service.postgres_db }}
+      PAPERLESS_DBUSER: {{ service.postgres_user }}
+      PAPERLESS_DBPASS: {{ service.postgres_pw }}
+      PAPERLESS_REDIS: {{ service.redis_address }}
+      PAPERLESS_ADMIN_USER: {{ service.paperless_admin_user }}
+      PAPERLESS_ADMIN_PASSWORD: {{ service.paperless_admin_pw }}
+      PAPERLESS_URL: {{ service.paperless_url }}
+      PAPERLESS_DATA_DIR: /data
+      PAPERLESS_TRASH_DIR: /trash
+      PAPERLESS_MEDIA_ROOT: /media
+    volumes:
+      - /mnt/media/Documents/paperless/data:/data
+      - /mnt/media/Documents/paperless/media:/media
+      - /mnt/media/Documents/paperless/export:/export
+      - /mnt/media/Documents/paperless/trash:/trash
+    ports:
+      - '{{ service.port }}:{{ service.port }}'  
+    restart: unless-stopped
+
+networks:
+  paperless-net:
+    name: paperless-net

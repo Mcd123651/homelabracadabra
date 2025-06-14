@@ -1,0 +1,16 @@
+- name: Create portainer_agent config directory
+  file:
+    path: "{{ ansible_user_dir }}/{{ service.name }}"
+    state: directory
+
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
+
+  
+- name: Start service with docker compose
+  shell: docker compose up -d
+  args:
+    chdir: "{{ ansible_user_dir }}/{{ service.name }}"

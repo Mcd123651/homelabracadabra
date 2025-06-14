@@ -1,4 +1,4 @@
-- name: Create Audiobookshelf config directory
+- name: Create pdf config directory
   file:
     path: "{{ ansible_user_dir }}/{{ service.name }}"
     state: directory
@@ -8,10 +8,10 @@
     src: docker-compose.yml.j2
     dest: "{{ ansible_user_dir }}/{{ service.name }}/docker-compose.yml"
 
-- name: Deploy templated config audiobookshelf.subdomain.conf
+- name: Deploy templated config pdf.subdomain.conf
   template:
-    src: audiobookshelf.subdomain.conf.j2
-    dest: "{{ ansible_user_dir }}/appdata/swag/nginx/proxy-confs/audiobookshelf.subdomain.conf"
+    src: pdf.subdomain.conf.j2
+    dest: "{{ ansible_user_dir }}/appdata/swag/nginx/proxy-confs/pdf.subdomain.conf"
     owner: 1000
     group: 1000
     mode: '0644'

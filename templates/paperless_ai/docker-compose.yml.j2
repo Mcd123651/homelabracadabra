@@ -1,0 +1,26 @@
+services:
+  paperless_ai:
+    image: clusterzx/paperless-ai
+    container_name: paperless_ai
+    restart: unless-stopped
+    networks:
+      - paperless-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges=true
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PAPERLESS_AI_PORT={{ service.port }}
+      - RAG_SERVICE_URL={{ service.paperless_address }}
+      - RAG_SERVICE_ENABLED={{ service.reg_enabled }}
+    ports:
+      - "{{ service.port }}:3000"
+    volumes:
+      - {{ ansible_user_dir }}/appdata/paperless_ai:/app/data
+
+networks:
+  paperless-net:
+    name: paperless-net
+    external: True      
