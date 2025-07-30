@@ -1,0 +1,64 @@
+---
+- name: Generate /etc/fstab from homelab config
+  hosts: all
+  become: true
+
+  vars:
+    nfs_mount: "{{ nfs_backup }}"
+    smb_config: "{{ smb_shares }}"
+    smb_uid: "{{ smb_config.uid }}"
+    smb_gid: "{{ smb_config.gid }}"
+    smb_server: "{{ smb_config.server }}"
+    smb_user: "{{ smb_config.user }}"
+    smb_password: "{{ smb_config.password }}"
+    smb_shares: "{{ smb_config.shares }}"
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop:
+        - nfs-common
+        - cifs-utils
+
+    - name: Ensure mount points exist
+      file:
+        path: "{{ item.mount_point }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ smb_shares + [nfs_mount] }}"
+
+    - name: Create SMB credentials file
+      copy:
+        dest: /etc/smb-credentials
+        content: |
+          username={{ smb_user }}
+          password={{ smb_password }}
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Generate fstab content from config
+      set_fact:
+        fstab_lines: |
+          LABEL=cloudimg-rootfs   /              ext4   discard,commit=30,errors=remount-ro  0 1
+          LABEL=BOOT              /boot          ext4   defaults                             0 2
+          LABEL=UEFI              /boot/efi      vfat   umask=0077                           0 1
+          {{ nfs_mount.server }}:{{ nfs_mount.nfs_export }} {{ nfs_mount.mount_point }} nfs defaults,_netdev,x-systemd.automount 0 0
+          {% for share in smb_shares %}
+          //{{ smb_server }}/{{ share.share }} {{ share.mount_point }} cifs credentials=/etc/smb-credentials,vers=3.0,uid={{ smb_uid }},gid={{ smb_gid }},file_mode=0664,dir_mode=0775,_netdev,x-systemd.automount 0 0
+          {% endfor %}
+
+    - name: Overwrite fstab with generated content
+      copy:
+        dest: /etc/fstab
+        content: "{{ fstab_lines }}"
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+
+    - name: Mount all filesystems from fstab
+      command: mount -a

@@ -36,5 +36,8 @@ ansible/roles/overseerr
 ansible/roles/maintainerr
 ansible/roles/homarr
 ansible/roles/flaresolverr
+ansible/roles/cleanuperr
+ansible/roles/huntarr
+ansible/roles/recyclarr
 
 ansible/adhoc_service.yml

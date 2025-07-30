@@ -1,15 +1,15 @@
 services:
-  maintainerr:
-    image: ghcr.io/jorenn92/maintainerr:latest
-    container_name: maintainerr
+  huntarr:
+    image: huntarr/huntarr:latest
+    container_name: huntarr
     environment:
+      - PUID=1000
+      - PGID=1000
       - TZ={{ service.timezone | default("America/New_York") }}
+    volumes:
+      - {{ ansible_user_dir }}/appdata/huntarr:/config
     ports:
       - {{ service.port }}:{{ service.port }}
-    volumes:
-      - type: bind
-        source: {{ ansible_user_dir }}/appdata/maintainerr  
-        target:  /data
     restart: unless-stopped
     networks:
       - arr-net

@@ -5,7 +5,6 @@ services:
     volumes:
       - /mnt/torrents:/downloads 
     restart: always
-    user: 1000:1000
     environment:
       - TZ={{ service.timezone | default("America/New_York") }}
       - UN_LOG_FILE=/downloads/unpackerr.log

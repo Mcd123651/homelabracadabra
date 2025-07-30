@@ -11,3 +11,10 @@ services:
       - TZ={{ service.timezone | default("America/New_York") }}
     volumes:
       - {{ ansible_user_dir }}/appdata/prowlarr:/config
+    networks:
+      - arr-net
+  
+networks:
+  arr-net:
+    name: arr-net
+    external: True
